@@ -1,4 +1,4 @@
-![Demo GDGOC Prompting Challenge](./public/Demo%20GDGOC%20Prompting%20Challenge.png)
+![Demo GDGOC Prompting Challenge](./public/Demo-GDGOC-Prompting-Challenge.png)
 
 # GDGoC Prompting Challenge 🎮
 
