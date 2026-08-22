@@ -10,6 +10,7 @@ import { Volume2, VolumeX } from 'lucide-react'
 import { PixelBackground } from '@/components/pixel-background'
 import { IntroScreen } from '@/components/intro-screen'
 import { SandboxTransition } from '@/components/sandbox-transition'
+import { RulesModal } from '@/components/rules-modal'
 
 const Page = () => {
   const router = useRouter()
@@ -21,6 +22,8 @@ const Page = () => {
   const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<'player' | 'faculty' | 'prodi'>('player')
   const [isMusicPlaying, setIsMusicPlaying] = useState(false)
   const [isTransitioningToSandbox, setIsTransitioningToSandbox] = useState(false)
+  const [showRules, setShowRules] = useState(false)
+  
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const toggleMusic = () => {
@@ -258,13 +261,14 @@ const Page = () => {
   return (
     <div className="min-h-screen bg-blue-50 py-8 relative overflow-hidden">
       <SandboxTransition isVisible={isTransitioningToSandbox} onComplete={handleNavigationToSandbox} />
+      <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
       <IntroScreen onComplete={() => {}} />
       <PixelBackground />
       <div className="container mx-auto px-4 relative z-10">
         {/* Title */}
         <div className='text-center justify-center items-center mb-12 flex flex-col '>
           <Image src="/images/logo.png" alt="Logo" width={100} height={100} />
-          <div className='flex flex-col gap-y-3'>
+          <div className='flex flex-col gap-y-3 items-center'>
             <h1 className="text-5xl md:text-6xl font-pixelify font-bold text-center tracking-wider mb-2 pixel-title z-10 relative">
               GDGoC Prompting Challenge
             </h1>
@@ -348,13 +352,19 @@ const Page = () => {
           </div>
 
           {/* Leaderboard + Form */}
-          <div className="w-full font-pixelify lg:w-80 xl:w-72">
+          <div className="w-full font-pixelify lg:w-80 xl:w-72 flex flex-col gap-4">
+            <button 
+              onClick={() => setShowRules(true)}
+              className="w-full bg-yellow-400 text-slate-900 border-2 border-slate-900 px-4 py-2 font-pixelify font-bold hover:bg-yellow-300 transition-colors shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[0px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2"
+            >
+              <span>❓</span> CARA BERMAIN
+            </button>
+            
             <div className="flex items-center justify-between mb-3 lg:mb-4">
               <h2 className="text-lg lg:text-xl font-bold text-blue-500">
                 🏆 Leaderboard
               </h2>
             </div>
-            
             {/* Tabs */}
             <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
               <button
