@@ -1,19 +1,25 @@
-<img width="1869" height="1006" alt="image" src="https://github.com/user-attachments/assets/09a1b802-3b31-457e-b908-bdb599ec7c3b" />
+![Demo GDGOC Prompting Challenge](./public/Demo%20GDGOC%20Prompting%20Challenge.png)
 
-# GDGoC Prompt Challenge
+# GDGoC Prompting Challenge 🎮
 
-A project for the Google Developer Groups On Campus (GDGoC) prompt challenge. This React application is an AI-powered image recreation game where players compete to generate the most accurate image based on prompts and beat previous high scores.
+A project for the Google Developer Groups On Campus (GDGoC) prompt challenge, specially themed around **Retro Pixel Art** and designed for **Telkom University** students! 
 
-## How to Play
+This React application is an AI-powered image recreation game where players compete to generate the most accurate image based on prompts and beat previous high scores. 
 
-1. **Select a Picture**: Choose from available reference images to recreate
-2. **Enter Details**: Provide your name and faculty information
-3. **Follow the Prompt**: Use the generated prompt to create an image as close as possible to the original reference
-4. **Beat the Score**: Compete with other players by achieving higher accuracy scores and climb the leaderboard
+## Features ✨
+- **Retro Pixel Art Aesthetic:** Enjoy a fun, interactive UI featuring falling pixels, 3D blocky text, and arcade-style transitions!
+- **Background Music (BGM):** Immersive 8-bit style background music to keep you in the zone.
+- **Telkom University Integration:** Select your Faculty and Program Studi (Prodi) to represent your major on the leaderboard.
+- **Leaderboard System:** Compete in Player, Faculty, and Prodi leaderboards!
 
-The goal is to create the most accurate recreation of the reference image using AI image generation tools, with scoring based on how closely your generated image matches the original.
+## How to Play 🕹️
 
-## Setup
+1. **Select a Picture**: Choose from available retro-themed reference images to recreate.
+2. **Enter Details**: Provide your username, choose your Telkom University Faculty, and select your Prodi.
+3. **Prompt it!**: Write a prompt that guides the AI to generate an image as close as possible to the original reference.
+4. **Beat the Score**: Your generated image will be scored based on similarity. Aim for 100/100 and climb the leaderboards!
+
+## Setup 🚀
 
 1. **Clone & Install**
 ```bash
@@ -40,7 +46,7 @@ GROQ_API_KEY=your_groq_api_key  # Get from https://console.groq.com (Fast infere
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)  
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## License
 
