@@ -7,6 +7,8 @@ import { CardStorage } from '@/lib/card-storage'
 import { Card } from '@/types/card'
 import posthog from 'posthog-js'
 import { Volume2, VolumeX } from 'lucide-react'
+import { PixelBackground } from '@/components/pixel-background'
+import { IntroScreen } from '@/components/intro-screen'
 
 const Page = () => {
   const router = useRouter()
@@ -237,13 +239,15 @@ const Page = () => {
   const selectedFacultyData = faculties.find(f => f.name === selectedFaculty)
 
   return (
-    <div className="min-h-screen bg-blue-50 py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-blue-50 py-8 relative overflow-hidden">
+      <IntroScreen onComplete={() => {}} />
+      <PixelBackground />
+      <div className="container mx-auto px-4 relative z-10">
         {/* Title */}
         <div className='text-center justify-center items-center mb-12 flex flex-col '>
           <Image src="/images/logo.png" alt="Logo" width={100} height={100} />
           <div className='flex flex-col gap-y-3'>
-            <h1 className="text-5xl font-pixelify font-bold text-center text-yellow-500">
+            <h1 className="text-5xl md:text-6xl font-pixelify font-bold text-center tracking-wider mb-2 pixel-title z-10 relative">
               GDGoC Prompting Challenge
             </h1>
             <p className='text-green-600 text-2xl font-pixelify'>Prompt your way to victory!</p>
