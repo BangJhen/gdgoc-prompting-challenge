@@ -146,6 +146,10 @@ export default function SandboxPage() {
 
     const [previousCard, setPreviousCard] = useState<Card | null>(null);
     const [judgingStatus, setJudgingStatus] = useState<'submitting' | 'grading' | 'completed-bridging' | 'completed-first-own' | 'completed-higher-score' | 'completed-lower-score' | 'failed' | null>(null);
+
+    // Version history: stores a screenshot+prompt for each completed generation
+    const [generationHistory, setGenerationHistory] = useState<{ id: number; prompt: string; screenshot: string }[]>([]);
+    const [showVersionModal, setShowVersionModal] = useState(false);
     
 
     const [conversationContext, setConversationContext] = useState<{
@@ -738,147 +742,124 @@ Tip: I automatically detect and install npm packages from your code imports (lik
         }
     };
 
-    const finishChallenge = async () => {
-        if (!sandboxData?.url) {
-            addChatMessage('No sandbox available to capture.', 'system');
-            return;
-        }
+    // Core judging logic — called after the user selects a version (or immediately if only 1 exists)
+    const submitFinalResult = async (chosenScreenshot: string) => {
         const selectedFaculty = searchParams.get('selectedFaculty');
-
         const previousCardLocal = selectedCardId ? CardStorage.getCardById(parseInt(selectedCardId)) : null;
         setPreviousCard(previousCardLocal);
 
+        setShowVersionModal(false);
         setIsCapturingScreenshot(true);
         setJudgingStatus('submitting');
         setLoadingStage('judging');
         setLoading(true);
-        addChatMessage('🎯 Finishing challenge - capturing your creation...', 'system');
+        addChatMessage('🎯 Submitting your chosen version...', 'system');
 
         try {
-            // Step 1: Capture screenshot of the generated sandbox
-            const screenshotResponse = await fetch('/api/scrape-screenshot-v2', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: sandboxData.url })
-            });
+            setGeneratedImage(chosenScreenshot);
 
-            if (!screenshotResponse.ok) {
-                throw new Error('Failed to capture screenshot');
-            }
-
-            const screenshotData = await screenshotResponse.json();
-
-            if (!screenshotData.success || !screenshotData.screenshot) {
-                throw new Error('Screenshot capture failed');
-            }
-
-            setGeneratedImage(screenshotData.screenshot);
-
-            // Step 2: Get the original image
+            // Get the original image
             const originalImageResponse = await fetch(`/images/image-${selectedCardId}.png`);
-            if (!originalImageResponse.ok) {
-                throw new Error('Failed to load original image');
-            }
-
+            if (!originalImageResponse.ok) throw new Error('Failed to load original image');
             const originalImageBlob = await originalImageResponse.blob();
 
-            // Step 3: Convert screenshot to blob
-            const screenshotResponse2 = await fetch(screenshotData.screenshot);
+            // Convert chosen screenshot to blob
+            const screenshotResponse2 = await fetch(chosenScreenshot);
             const screenshotBlob = await screenshotResponse2.blob();
 
-            // Step 4: Compare images using decide-similarity API
-
+            // Compare images
             setJudgingStatus('grading');
             const formData = new FormData();
             formData.append('original', originalImageBlob, 'original.png');
             formData.append('generated', screenshotBlob, 'generated.png');
 
-            const similarityResponse = await fetch('/api/decide-similarity', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!similarityResponse.ok) {
-                throw new Error('Failed to analyze similarity');
-            }
-
+            const similarityResponse = await fetch('/api/decide-similarity', { method: 'POST', body: formData });
+            if (!similarityResponse.ok) throw new Error('Failed to analyze similarity');
             const similarityData = await similarityResponse.json();
 
-            // Step 5: Display results
             setJudgingStatus('completed-bridging');
             setSimilarityScore(similarityData.score);
             setChallengeCompleted(true);
 
-            // Save best score to local storage
             if (selectedCardId && username) {
                 const faculty = searchParams.get('selectedFaculty');
                 const prodi = searchParams.get('selectedProdi') || faculty || '';
                 if (faculty) {
-                    CardStorage.updateCardBestScore(
-                        parseInt(selectedCardId),
-                        {
-                            name: username,
-                            faculty: faculty,
-                            prodi: prodi,
-                            score: similarityData.score
-                        }
-                    );
-
-                    console.log('previousCardLocal', previousCardLocal);
-
+                    CardStorage.updateCardBestScore(parseInt(selectedCardId), {
+                        name: username,
+                        faculty: faculty,
+                        prodi: prodi,
+                        score: similarityData.score
+                    });
                     if (previousCardLocal?.best?.score === null) {
-                        setTimeout(() => {
-                        setJudgingStatus('completed-first-own');
-                        }, 500);
-                        posthog.capture('finished_challenge', {
-                            selectedCardId,
-                            username,
-                            selectedFaculty,
-                            similarityScore,
-                            type: 'first_own'
-                        })
+                        setTimeout(() => setJudgingStatus('completed-first-own'), 500);
+                        posthog.capture('finished_challenge', { selectedCardId, username, selectedFaculty, similarityScore, type: 'first_own' });
                     } else if (previousCardLocal?.best?.score && similarityData.score < previousCardLocal.best.score) {
-                        setTimeout(() => {
-                            setJudgingStatus('completed-lower-score');
-                        }, 3000);
-                        posthog.capture('finished_challenge', {
-                            selectedCardId,
-                            username,
-                            selectedFaculty,
-                            similarityScore,
-                            type: 'lower_score'
-                        })
+                        setTimeout(() => setJudgingStatus('completed-lower-score'), 3000);
+                        posthog.capture('finished_challenge', { selectedCardId, username, selectedFaculty, similarityScore, type: 'lower_score' });
                     } else {
-                        setTimeout(() => {
-                            setJudgingStatus('completed-higher-score');
-                        }, 3000);
-                        posthog.capture('finished_challenge', {
-                            selectedCardId,
-                            username,
-                            selectedFaculty,
-                            similarityScore,
-                            type: 'higher_score'
-                        })
+                        setTimeout(() => setJudgingStatus('completed-higher-score'), 3000);
+                        posthog.capture('finished_challenge', { selectedCardId, username, selectedFaculty, similarityScore, type: 'higher_score' });
                     }
                 }
             }
 
             addChatMessage(`🎉 Challenge Complete! Your similarity score is: **${similarityData.score}/100**`, 'system');
-
-            if (similarityData.score >= 90) {
-                addChatMessage('🌟 Excellent work! Your recreation is nearly identical to the original!', 'system');
-            } else if (similarityData.score >= 70) {
-                addChatMessage('💪 Great job! Your recreation captures most of the original design!', 'system');
-            } else if (similarityData.score >= 50) {
-                addChatMessage('👍 Good effort! There\'s room for improvement in the details.', 'system');
-            } else {
-                addChatMessage('🎯 Keep practicing! Try focusing on the key visual elements.', 'system');
-            }
+            if (similarityData.score >= 90) addChatMessage('🌟 Excellent work! Your recreation is nearly identical to the original!', 'system');
+            else if (similarityData.score >= 70) addChatMessage('💪 Great job! Your recreation captures most of the original design!', 'system');
+            else if (similarityData.score >= 50) addChatMessage('👍 Good effort! There\'s room for improvement in the details.', 'system');
+            else addChatMessage('🎯 Keep practicing! Try focusing on the key visual elements.', 'system');
 
         } catch (error: any) {
             console.error('Finish challenge error:', error);
             addChatMessage(`❌ Failed to complete challenge: ${error.message}`, 'error');
         } finally {
+            setIsCapturingScreenshot(false);
+            setLoadingStage(null);
+            setLoading(false);
+        }
+    };
+
+    // Entry point when player clicks Finish Challenge
+    const finishChallenge = async () => {
+        if (!sandboxData?.url) {
+            addChatMessage('No sandbox available to capture.', 'system');
+            return;
+        }
+
+        // If we have a saved history, show the picker modal
+        if (generationHistory.length > 1) {
+            setShowVersionModal(true);
+            return;
+        }
+
+        // If exactly one version exists, use it directly without calling the API again
+        if (generationHistory.length === 1) {
+            await submitFinalResult(generationHistory[0].screenshot);
+            return;
+        }
+
+        // No history yet — capture live screenshot and submit
+        setIsCapturingScreenshot(true);
+        setJudgingStatus('submitting');
+        setLoadingStage('judging');
+        setLoading(true);
+        addChatMessage('🎯 Finishing challenge - capturing your creation...', 'system');
+        try {
+            const screenshotResponse = await fetch('/api/scrape-screenshot-v2', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: sandboxData.url })
+            });
+            if (!screenshotResponse.ok) throw new Error('Failed to capture screenshot');
+            const screenshotData = await screenshotResponse.json();
+            if (!screenshotData.success || !screenshotData.screenshot) throw new Error('Screenshot capture failed');
+            setIsCapturingScreenshot(false);
+            setLoadingStage(null);
+            setLoading(false);
+            await submitFinalResult(screenshotData.screenshot);
+        } catch (error: any) {
+            addChatMessage(`❌ Failed to capture screenshot: ${error.message}`, 'error');
             setIsCapturingScreenshot(false);
             setLoadingStage(null);
             setLoading(false);
@@ -1243,6 +1224,26 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                 if (sandboxData && generatedCode) {
                     // Use isEdit flag that was determined at the start
                     await applyGeneratedCode(generatedCode, isEdit);
+
+                    // Silently capture a background screenshot for version history
+                    if (sandboxData?.url) {
+                        try {
+                            const bgShot = await fetch('/api/scrape-screenshot-v2', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ url: sandboxData.url })
+                            });
+                            const bgData = await bgShot.json();
+                            if (bgData.success && bgData.screenshot) {
+                                setGenerationHistory(prev => [
+                                    ...prev,
+                                    { id: prev.length + 1, prompt: message, screenshot: bgData.screenshot }
+                                ]);
+                            }
+                        } catch {
+                            // Silent fail — version history is non-critical
+                        }
+                    }
                 }
             }
 
@@ -1711,6 +1712,64 @@ Tip: I automatically detect and install npm packages from your code imports (lik
 
     return (
         <div className="font-sans bg-background text-foreground h-screen flex flex-col">
+            {/* Version Selection Modal */}
+            {showVersionModal && (
+                <div className="fixed inset-0 z-50 font-pixelify bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col">
+                        {/* Header */}
+                        <div className="px-6 py-4 border-b flex items-center justify-between">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-800">🎨 Choose Your Best Version</h2>
+                                <p className="text-sm text-gray-500 mt-0.5">Select which result you want to submit for scoring</p>
+                            </div>
+                            <button
+                                onClick={() => setShowVersionModal(false)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors text-2xl leading-none"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        {/* Grid */}
+                        <div className="overflow-y-auto p-6 grid grid-cols-2 sm:grid-cols-3 gap-4 flex-1">
+                            {generationHistory.map((version) => (
+                                <div
+                                    key={version.id}
+                                    className="flex flex-col rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow group"
+                                >
+                                    {/* Screenshot preview */}
+                                    <div className="relative bg-gray-50 aspect-video overflow-hidden">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={version.screenshot}
+                                            alt={`Version ${version.id}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+                                            v{version.id}
+                                        </div>
+                                    </div>
+
+                                    {/* Prompt label */}
+                                    <div className="p-3 flex-1 flex flex-col justify-between">
+                                        <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                                            <span className="font-semibold text-gray-800">Prompt: </span>
+                                            {version.prompt}
+                                        </p>
+                                        <button
+                                            onClick={() => submitFinalResult(version.screenshot)}
+                                            className="w-full py-1.5 text-sm font-semibold bg-[#4285F4] hover:bg-blue-600 text-white rounded-lg transition-colors"
+                                        >
+                                            ✓ Submit this version
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Loading Background */}
             {showLoadingBackground && (
                 <div className="fixed inset-0 z-50 font-pixelify bg-black/10 backdrop-blur-lg flex items-center justify-center p-4">
