@@ -1,11 +1,12 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useQueryState } from 'nuqs'
 import { useRouter } from 'next/navigation'
 import { CardStorage } from '@/lib/card-storage'
 import { Card } from '@/types/card'
 import posthog from 'posthog-js'
+import { Volume2, VolumeX } from 'lucide-react'
 
 const Page = () => {
   const router = useRouter()
@@ -14,6 +15,20 @@ const Page = () => {
   const [selectedFaculty, setSelectedFaculty] = useQueryState('selectedFaculty')
   const [selectedProdi, setSelectedProdi] = useQueryState('selectedProdi')
   const [cards, setCards] = useState<Card[]>([])
+  const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<'player' | 'faculty' | 'prodi'>('player')
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isMusicPlaying) {
+        audioRef.current.pause()
+      } else {
+        audioRef.current.play()
+      }
+      setIsMusicPlaying(!isMusicPlaying)
+    }
+  }
 
   const selectedCardIdNumber = selectedCardId ? parseInt(selectedCardId) : null
 
@@ -29,10 +44,9 @@ const Page = () => {
       color: "bg-yellow-50 border-yellow-200 text-yellow-800",
       prodis: [
         "S1 Informatika",
-        "S1 Sistem Informasi",
-        "S1 Teknik Komputer",
-        "S1 Ilmu Komputasi",
-        "D3 Rekayasa Perangkat Lunak Aplikasi",
+        "S1 Teknologi Informasi",
+        "S1 Rekayasa Perangkat Lunak",
+        "S1 Sains Data",
       ]
     },
     {
@@ -42,7 +56,10 @@ const Page = () => {
         "S1 Teknik Elektro",
         "S1 Teknik Telekomunikasi",
         "S1 Teknik Fisika",
-        "S2 Teknik Elektro",
+        "S1 Teknik Komputer",
+        "S1 Teknik Biomedis",
+        "S1 Teknik Sistem Energi",
+        "S1 Smart Science and Technology",
       ]
     },
     {
@@ -50,11 +67,10 @@ const Page = () => {
       color: "bg-orange-50 border-orange-200 text-orange-800",
       prodis: [
         "S1 Desain Komunikasi Visual",
-        "S1 Desain Produk Inovasi",
-        "S1 Kriya",
+        "S1 Desain Produk",
+        "S1 Desain Interior",
+        "S1 Kriya Tekstil dan Mode",
         "S1 Seni Rupa",
-        "S1 Film dan Televisi",
-        "S1 Fashion & Textile Design",
       ]
     },
     {
@@ -62,43 +78,47 @@ const Page = () => {
       color: "bg-green-50 border-green-700 text-green-800",
       prodis: [
         "S1 Teknik Industri",
-        "S1 Sistem Informasi Industri Otomotif",
-        "S1 International ICT Business",
-        "S2 Teknik Industri",
+        "S1 Sistem Informasi",
+        "S1 Teknik Logistik",
+        "S1 Manajemen Rekayasa",
       ]
     },
     {
-      name: "Fakultas Komunikasi Sosial",
+      name: "Fakultas Komunikasi dan Ilmu Sosial",
       color: "bg-indigo-50 border-indigo-200 text-indigo-800",
       prodis: [
         "S1 Ilmu Komunikasi",
-        "S1 Administrasi Bisnis",
-        "S1 Manajemen",
-        "S2 Ilmu Komunikasi",
+        "S1 Psikologi",
+        "S1 Hubungan Masyarakat Digital",
+        "S1 Penyiaran Digital",
       ]
     },
     {
-      name: "Fakultas Ekonomi Bisnis",
+      name: "Fakultas Ekonomi dan Bisnis",
       color: "bg-cyan-50 border-cyan-200 text-cyan-800",
       prodis: [
+        "S1 Manajemen Bisnis Telekomunikasi dan Informatika (MBTI)",
+        "S1 Administrasi Bisnis",
         "S1 Akuntansi",
-        "S1 Manajemen Bisnis Telekomunikasi dan Informatika",
         "S1 Bisnis Digital",
-        "S2 Manajemen",
+        "S1 Manajemen Bisnis Rekreasi",
       ]
     },
     {
-      name: "Fakultas Industri Terapan",
+      name: "Fakultas Ilmu Terapan",
       color: "bg-emerald-50 border-emerald-200 text-emerald-800",
       prodis: [
         "D3 Teknik Telekomunikasi",
+        "D3 Rekayasa Perangkat Lunak Aplikasi",
+        "D3 Sistem Informasi",
+        "D3 Sistem Informasi Akuntansi",
         "D3 Teknologi Komputer",
-        "D3 Komputerisasi Akuntansi",
-        "D3 Manajemen Informatika",
-        "D4 Teknologi Rekayasa Multimedia",
-        "D4 Teknologi Rekayasa Sistem Elektronika",
+        "D3 Manajemen Pemasaran",
+        "D3 Perhotelan",
+        "S1 Terapan Teknologi Rekayasa Multimedia",
+        "S1 Terapan Sistem Informasi Kota Cerdas",
       ]
-    },
+    }
   ]
 
   // Helper to get a colour for score progress bar
@@ -138,6 +158,74 @@ const Page = () => {
     })
 
     return Array.from(userMap.values())
+      .sort((a, b) => {
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
+        return b.cardCount - a.cardCount
+      })
+      .slice(0, 10)
+      .map((entry, idx) => ({ ...entry, rank: idx + 1 }))
+  })()
+
+  // Build leaderboard ranking for Faculties
+  const facultyLeaderboard = (() => {
+    const facultyMap = new Map<string, {
+      name: string;
+      totalScore: number;
+      cardCount: number;
+    }>()
+
+    cards.forEach((card) => {
+      if (!card.best) return
+      const key = card.best.faculty
+      const existing = facultyMap.get(key)
+      if (existing) {
+        existing.totalScore += card.best.score
+        existing.cardCount += 1
+      } else {
+        facultyMap.set(key, {
+          name: card.best.faculty,
+          totalScore: card.best.score,
+          cardCount: 1,
+        })
+      }
+    })
+
+    return Array.from(facultyMap.values())
+      .sort((a, b) => {
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
+        return b.cardCount - a.cardCount
+      })
+      .slice(0, 10)
+      .map((entry, idx) => ({ ...entry, rank: idx + 1 }))
+  })()
+
+  // Build leaderboard ranking for Prodis
+  const prodiLeaderboard = (() => {
+    const prodiMap = new Map<string, {
+      name: string;
+      faculty: string;
+      totalScore: number;
+      cardCount: number;
+    }>()
+
+    cards.forEach((card) => {
+      if (!card.best) return
+      const key = card.best.prodi || card.best.faculty
+      const existing = prodiMap.get(key)
+      if (existing) {
+        existing.totalScore += card.best.score
+        existing.cardCount += 1
+      } else {
+        prodiMap.set(key, {
+          name: card.best.prodi || card.best.faculty,
+          faculty: card.best.faculty,
+          totalScore: card.best.score,
+          cardCount: 1,
+        })
+      }
+    })
+
+    return Array.from(prodiMap.values())
       .sort((a, b) => {
         if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
         return b.cardCount - a.cardCount
@@ -230,37 +318,123 @@ const Page = () => {
 
           {/* Leaderboard + Form */}
           <div className="w-full font-pixelify lg:w-80 xl:w-72">
-            <h2 className="text-xl font-bold mb-4 text-blue-500 text-center lg:text-left">
-              🏆 Player Leaderboard
-            </h2>
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
+              <h2 className="text-lg lg:text-xl font-bold text-blue-500">
+                🏆 Leaderboard
+              </h2>
+            </div>
+            
+            {/* Tabs */}
+            <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
+              <button
+                onClick={() => setActiveLeaderboardTab('player')}
+                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${activeLeaderboardTab === 'player' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Player
+              </button>
+              <button
+                onClick={() => setActiveLeaderboardTab('faculty')}
+                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${activeLeaderboardTab === 'faculty' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Faculty
+              </button>
+              <button
+                onClick={() => setActiveLeaderboardTab('prodi')}
+                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${activeLeaderboardTab === 'prodi' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Prodi
+              </button>
+            </div>
+
             <div className="bg-white rounded-lg shadow-sm border divide-y">
-              {leaderboard.length === 0 ? (
-                <div className="p-4 text-center text-gray-400 text-sm">
-                  No scores yet. Be the first!
-                </div>
-              ) : (
-                leaderboard.map((entry) => {
-                  const facultyData = faculties.find(f => f.name === entry.faculty)
-                  return (
-                    <div key={entry.rank} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-700">
-                          {entry.rank}
+              {activeLeaderboardTab === 'player' && (
+                leaderboard.length === 0 ? (
+                  <div className="p-4 text-center text-gray-400 text-sm">
+                    No scores yet. Be the first!
+                  </div>
+                ) : (
+                  leaderboard.map((entry) => {
+                    const facultyData = faculties.find(f => f.name === entry.faculty)
+                    return (
+                      <div key={entry.rank} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-700">
+                            {entry.rank}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-semibold text-gray-800 truncate">{entry.name}</span>
+                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border truncate max-w-[130px] ${facultyData?.color ?? 'bg-gray-50 border-gray-200 text-gray-600'}`}>
+                              {entry.prodi}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-sm font-semibold text-gray-800 truncate">{entry.name}</span>
-                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border truncate max-w-[130px] ${facultyData?.color ?? 'bg-gray-50 border-gray-200 text-gray-600'}`}>
-                            {entry.prodi}
-                          </span>
+                        <div className="text-right flex-shrink-0 ml-2">
+                          <div className="text-sm font-semibold text-gray-800">{entry.totalScore} pts</div>
+                          <div className="text-xs text-gray-500">{entry.cardCount} card{entry.cardCount > 1 ? 's' : ''}</div>
                         </div>
                       </div>
-                      <div className="text-right flex-shrink-0 ml-2">
-                        <div className="text-sm font-semibold text-gray-800">{entry.totalScore} pts</div>
-                        <div className="text-xs text-gray-500">{entry.cardCount} card{entry.cardCount > 1 ? 's' : ''}</div>
+                    )
+                  })
+                )
+              )}
+
+              {activeLeaderboardTab === 'faculty' && (
+                facultyLeaderboard.length === 0 ? (
+                  <div className="p-4 text-center text-gray-400 text-sm">
+                    No scores yet. Be the first!
+                  </div>
+                ) : (
+                  facultyLeaderboard.map((entry) => {
+                    const facultyData = faculties.find(f => f.name === entry.name)
+                    return (
+                      <div key={entry.rank} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-700">
+                            {entry.rank}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-semibold text-gray-800 truncate max-w-[140px]">{entry.name}</span>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0 ml-2">
+                          <div className="text-sm font-semibold text-gray-800">{entry.totalScore} pts</div>
+                          <div className="text-xs text-gray-500">{entry.cardCount} card{entry.cardCount > 1 ? 's' : ''}</div>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })
+                    )
+                  })
+                )
+              )}
+
+              {activeLeaderboardTab === 'prodi' && (
+                prodiLeaderboard.length === 0 ? (
+                  <div className="p-4 text-center text-gray-400 text-sm">
+                    No scores yet. Be the first!
+                  </div>
+                ) : (
+                  prodiLeaderboard.map((entry) => {
+                    const facultyData = faculties.find(f => f.name === entry.faculty)
+                    return (
+                      <div key={entry.rank} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-700">
+                            {entry.rank}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-semibold text-gray-800 truncate max-w-[130px]">{entry.name}</span>
+                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border truncate max-w-[130px] mt-0.5 ${facultyData?.color ?? 'bg-gray-50 border-gray-200 text-gray-600'}`}>
+                              {entry.faculty}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0 ml-2">
+                          <div className="text-sm font-semibold text-gray-800">{entry.totalScore} pts</div>
+                          <div className="text-xs text-gray-500">{entry.cardCount} card{entry.cardCount > 1 ? 's' : ''}</div>
+                        </div>
+                      </div>
+                    )
+                  })
+                )
               )}
             </div>
 
@@ -334,6 +508,20 @@ const Page = () => {
           </div>
         </div>
       </div>
+      
+      {/* Audio Element and Floating Button */}
+      <audio ref={audioRef} src="/bgm.mp3" loop />
+      <button
+        onClick={toggleMusic}
+        className="fixed bottom-6 right-6 p-3 bg-white rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors z-50 group flex items-center justify-center"
+        aria-label="Toggle Background Music"
+      >
+        {isMusicPlaying ? (
+          <Volume2 className="w-6 h-6 text-blue-500" />
+        ) : (
+          <VolumeX className="w-6 h-6 text-gray-400" />
+        )}
+      </button>
     </div>
   )
 }

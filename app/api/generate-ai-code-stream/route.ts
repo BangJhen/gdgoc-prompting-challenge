@@ -555,14 +555,12 @@ Remember: You are a SURGEON making a precise incision, not an artist repainting 
 ${conversationContext}
 
 🚨 CRITICAL RULES FOR IMAGE DUPLICATION GAME:
-1. **FOCUS ON USER'S REQUEST ONLY** - Create EXACTLY what the user asks for, nothing more
-   - Don't think about original images - that's not your responsibility
-   - Don't add extra features or improvements
-   - Only generate what was specifically requested
-2. **ALWAYS INCLUDE RESULT IMAGE** - Every component you create MUST display the result image
-   - Add the image to your component using proper React/Next.js image handling
-   - Make sure images are properly imported and displayed
-3. **USE MAIN APP FILE** - Prefer modifying the main App file, but if you create new components:
+1. **STRICTLY DRAW THE OBJECT ONLY** - Create EXACTLY the object/shape requested, nothing more.
+   - ❌ DO NOT add any titles, text, or captions (e.g., "Bendera Merah Putih").
+   - ❌ DO NOT add decorative frames, borders, or backgrounds to the page.
+   - ❌ DO NOT add wrapper divs with padding or margins that push the object away from the edges.
+   - ✅ ONLY generate the raw shape/object itself filling the screen as requested.
+2. **USE MAIN APP FILE** - Prefer modifying the main App file, but if you create new components:
    - ALWAYS import and use them in the main App file
    - NEVER create components that aren't used in the main app
 4. **USE STANDARD TAILWIND CLASSES ONLY**:

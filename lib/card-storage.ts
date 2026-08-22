@@ -38,15 +38,7 @@ export class CardStorage {
   }
 
   static initializeDefaultCards(): Card[] {
-    const faculties = [
-      "Fakultas Informatika",
-      "Fakultas Teknik Elektro",
-      "Fakultas Industri Kreatif",
-      "Fakultas Rekayasa Industri",
-      "Fakultas Komunikasi Sosial",
-      "Fakultas Ekonomi Bisnis",
-      "Fakultas Industri Terapan"
-    ];
+    // faculties list removed as it is handled in page.tsx
 
     const defaultCards: Card[] = Array.from({ length: 20 }, (_, index) => ({
       id: index + 1,
