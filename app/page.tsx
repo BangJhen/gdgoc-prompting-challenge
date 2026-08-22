@@ -266,8 +266,15 @@ const Page = () => {
       <PixelBackground />
       <div className="container mx-auto px-4 relative z-10">
         {/* Title */}
-        <div className='text-center justify-center items-center mb-12 flex flex-col '>
-          <Image src="/images/logo.png" alt="Logo" width={100} height={100} />
+        <div className='text-center justify-center items-center mb-10 flex flex-col gap-y-2'>
+          <Image 
+            src="/images/logo.png" 
+            alt="GDGoC Logo" 
+            width={240} 
+            height={240} 
+            className="w-40 md:w-56 h-auto object-contain drop-shadow-lg transition-transform hover:scale-105 duration-300"
+            priority
+          />
           <div className='flex flex-col gap-y-3 items-center'>
             <h1 className="text-5xl md:text-6xl font-pixelify font-bold text-center tracking-wider mb-2 pixel-title z-10 relative">
               GDGoC Prompting Challenge
