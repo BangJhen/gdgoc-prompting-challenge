@@ -113,6 +113,29 @@ export default function SandboxPage() {
     const [selectedFile, setSelectedFile] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'generation' | 'preview'>('preview');
     const [showLoadingBackground, setShowLoadingBackground] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState('Setting up your sandbox...');
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (showLoadingBackground) {
+            const messages = [
+                'Allocating secure cloud environment...',
+                'Writing base React and Tailwind configuration...',
+                'Installing NPM dependencies (this might take a few seconds)...',
+                'Starting Vite development server...',
+                'Connecting to sandbox...'
+            ];
+            let i = 0;
+            setLoadingMessage(messages[0]);
+            interval = setInterval(() => {
+                i++;
+                if (i < messages.length) {
+                    setLoadingMessage(messages[i]);
+                }
+            }, 3000);
+        }
+        return () => clearInterval(interval);
+    }, [showLoadingBackground]);
     const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
     const [loadingStage, setLoadingStage] = useState<'gathering' | 'planning' | 'generating' | "judging" | null>(null);
     const [challengeCompleted, setChallengeCompleted] = useState(false);
@@ -1701,7 +1724,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                                 </div>
                             </div>
                             <h2 className="text-3xl font-bold  bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
-                                Setting up your sandbox...
+                                {loadingMessage}
                             </h2>
                             <p className="text-gray-600">GDGoC Prompting Challenge</p>
                         </div>
