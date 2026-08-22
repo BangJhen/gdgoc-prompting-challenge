@@ -789,12 +789,14 @@ Tip: I automatically detect and install npm packages from your code imports (lik
             // Save best score to local storage
             if (selectedCardId && username) {
                 const faculty = searchParams.get('selectedFaculty');
+                const prodi = searchParams.get('selectedProdi') || faculty || '';
                 if (faculty) {
                     CardStorage.updateCardBestScore(
                         parseInt(selectedCardId),
                         {
                             name: username,
                             faculty: faculty,
+                            prodi: prodi,
                             score: similarityData.score
                         }
                     );

@@ -12,6 +12,7 @@ const Page = () => {
   const [selectedCardId, setSelectedCardId] = useQueryState('selectedImage')
   const [username, setUsername] = useQueryState('username')
   const [selectedFaculty, setSelectedFaculty] = useQueryState('selectedFaculty')
+  const [selectedProdi, setSelectedProdi] = useQueryState('selectedProdi')
   const [cards, setCards] = useState<Card[]>([])
 
   const selectedCardIdNumber = selectedCardId ? parseInt(selectedCardId) : null
@@ -23,50 +24,129 @@ const Page = () => {
   }, [])
 
   const faculties = [
-    { name: "Fakultas Informatika", color: "bg-yellow-50 border-yellow-200 text-yellow-800" },
-    { name: "Fakultas Teknik Elektro", color: "bg-blue-50 border-blue-200 text-blue-800" },
-    { name: "Fakultas Industri Kreatif", color: "bg-orange-50 border-orange-200 text-orange-800" },
-    { name: "Fakultas Rekayasa Industri", color: "bg-green-50 border-green-700 text-green-800" },
-    { name: "Fakultas Komunikasi Sosial", color: "bg-indigo-50 border-indigo-200 text-indigo-800" },
-    { name: "Fakultas Ekonomi Bisnis", color: "bg-cyan-50 border-cyan-200 text-cyan-800" },
-    { name: "Fakultas Industri Terapan", color: "bg-emerald-50 border-emerald-200 text-emerald-800" }
+    {
+      name: "Fakultas Informatika",
+      color: "bg-yellow-50 border-yellow-200 text-yellow-800",
+      prodis: [
+        "S1 Informatika",
+        "S1 Sistem Informasi",
+        "S1 Teknik Komputer",
+        "S1 Ilmu Komputasi",
+        "D3 Rekayasa Perangkat Lunak Aplikasi",
+      ]
+    },
+    {
+      name: "Fakultas Teknik Elektro",
+      color: "bg-blue-50 border-blue-200 text-blue-800",
+      prodis: [
+        "S1 Teknik Elektro",
+        "S1 Teknik Telekomunikasi",
+        "S1 Teknik Fisika",
+        "S2 Teknik Elektro",
+      ]
+    },
+    {
+      name: "Fakultas Industri Kreatif",
+      color: "bg-orange-50 border-orange-200 text-orange-800",
+      prodis: [
+        "S1 Desain Komunikasi Visual",
+        "S1 Desain Produk Inovasi",
+        "S1 Kriya",
+        "S1 Seni Rupa",
+        "S1 Film dan Televisi",
+        "S1 Fashion & Textile Design",
+      ]
+    },
+    {
+      name: "Fakultas Rekayasa Industri",
+      color: "bg-green-50 border-green-700 text-green-800",
+      prodis: [
+        "S1 Teknik Industri",
+        "S1 Sistem Informasi Industri Otomotif",
+        "S1 International ICT Business",
+        "S2 Teknik Industri",
+      ]
+    },
+    {
+      name: "Fakultas Komunikasi Sosial",
+      color: "bg-indigo-50 border-indigo-200 text-indigo-800",
+      prodis: [
+        "S1 Ilmu Komunikasi",
+        "S1 Administrasi Bisnis",
+        "S1 Manajemen",
+        "S2 Ilmu Komunikasi",
+      ]
+    },
+    {
+      name: "Fakultas Ekonomi Bisnis",
+      color: "bg-cyan-50 border-cyan-200 text-cyan-800",
+      prodis: [
+        "S1 Akuntansi",
+        "S1 Manajemen Bisnis Telekomunikasi dan Informatika",
+        "S1 Bisnis Digital",
+        "S2 Manajemen",
+      ]
+    },
+    {
+      name: "Fakultas Industri Terapan",
+      color: "bg-emerald-50 border-emerald-200 text-emerald-800",
+      prodis: [
+        "D3 Teknik Telekomunikasi",
+        "D3 Teknologi Komputer",
+        "D3 Komputerisasi Akuntansi",
+        "D3 Manajemen Informatika",
+        "D4 Teknologi Rekayasa Multimedia",
+        "D4 Teknologi Rekayasa Sistem Elektronika",
+      ]
+    },
   ]
-
 
   // Helper to get a colour for score progress bar
   const scoreBarColor = (score: number) => {
-    if (score >= 80) return 'bg-[#34A853]' // Google green
-    if (score >= 60) return 'bg-[#FBBC05]' // Google yellow
-    if (score >= 40) return 'bg-[#EA4335]' // Google red-ish (orange)
+    if (score >= 80) return 'bg-[#34A853]'
+    if (score >= 60) return 'bg-[#FBBC05]'
+    if (score >= 40) return 'bg-[#EA4335]'
     return 'bg-red-500'
   }
 
-  // Build a leaderboard based on best scores achieved by each faculty
-  const leaderboard = faculties
-    .map((faculty) => {
-      const facultyBestScores = cards
-        .filter((card) => card.best?.faculty === faculty.name)
-        .map((card) => card.best!.score)
+  // Build a leaderboard ranking individual users by total score across all cards
+  const leaderboard = (() => {
+    const userMap = new Map<string, {
+      name: string;
+      prodi: string;
+      faculty: string;
+      totalScore: number;
+      cardCount: number;
+    }>()
 
-      const averageScore = facultyBestScores.length > 0
-        ? Math.round(facultyBestScores.reduce((sum, score) => sum + score, 0) / facultyBestScores.length)
-        : 0
-
-      return {
-        faculty: faculty.name,
-        count: facultyBestScores.length,
-        averageScore,
-        color: faculty.color
+    cards.forEach((card) => {
+      if (!card.best) return
+      const key = `${card.best.name}__${card.best.prodi ?? card.best.faculty}`
+      const existing = userMap.get(key)
+      if (existing) {
+        existing.totalScore += card.best.score
+        existing.cardCount += 1
+      } else {
+        userMap.set(key, {
+          name: card.best.name,
+          prodi: card.best.prodi || card.best.faculty,
+          faculty: card.best.faculty,
+          totalScore: card.best.score,
+          cardCount: 1,
+        })
       }
     })
-    .sort((a, b) => {
-      // Sort by count first (how many cards conquered), then by average score
-      if (b.count !== a.count) {
-        return b.count - a.count
-      }
-      return b.averageScore - a.averageScore
-    })
-    .map((entry, idx) => ({ ...entry, rank: idx + 1 }))
+
+    return Array.from(userMap.values())
+      .sort((a, b) => {
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
+        return b.cardCount - a.cardCount
+      })
+      .slice(0, 10)
+      .map((entry, idx) => ({ ...entry, rank: idx + 1 }))
+  })()
+
+  const selectedFacultyData = faculties.find(f => f.name === selectedFaculty)
 
   return (
     <div className="min-h-screen bg-blue-50 py-8">
@@ -75,10 +155,10 @@ const Page = () => {
         <div className='text-center justify-center items-center mb-12 flex flex-col '>
           <Image src="/images/logo.png" alt="Logo" width={100} height={100} />
           <div className='flex flex-col gap-y-3'>
-          <h1 className="text-5xl font-pixelify font-bold text-center  text-yellow-500">
-            GDGoC Prompting Challenge
-          </h1>
-          <p className='text-green-600 text-2xl font-pixelify'>Prompt your way to victory!</p>
+            <h1 className="text-5xl font-pixelify font-bold text-center text-yellow-500">
+              GDGoC Prompting Challenge
+            </h1>
+            <p className='text-green-600 text-2xl font-pixelify'>Prompt your way to victory!</p>
           </div>
         </div>
 
@@ -119,11 +199,11 @@ const Page = () => {
                           <span className="font-medium text-gray-800">{card.best.name}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm font-pixelify">
-                          <span className="text-gray-600">Faculty:</span>
+                          <span className="text-gray-600">Prodi:</span>
                           <span
-                            className={`font-medium px-2 py-0.5 rounded border ${faculties.find((f) => f.name === card.best!.faculty)?.color}`}
+                            className={`font-medium text-[10px] px-1.5 py-0.5 rounded border ${faculties.find((f) => f.name === card.best!.faculty)?.color}`}
                           >
-                            {card.best.faculty}
+                            {card.best.prodi || card.best.faculty}
                           </span>
                         </div>
                         {/* Score Bar */}
@@ -148,83 +228,109 @@ const Page = () => {
             </div>
           </div>
 
-          {/* Leaderboard */}
+          {/* Leaderboard + Form */}
           <div className="w-full font-pixelify lg:w-80 xl:w-72">
             <h2 className="text-xl font-bold mb-4 text-blue-500 text-center lg:text-left">
-              Faculty Leaderboard
+              🏆 Player Leaderboard
             </h2>
             <div className="bg-white rounded-lg shadow-sm border divide-y">
-              {leaderboard.map((entry) => (
-                <div key={entry.rank} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-700">
-                      {entry.rank}
-                    </div>
-                    <span className={`text-sm font-medium ${entry.color}`}>{entry.faculty}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-gray-800">{entry.count} cards</div>
-                    {entry.averageScore > 0 && (
-                      <div className="text-xs text-gray-500">{entry.averageScore}/100 avg</div>
-                    )}
-                  </div>
+              {leaderboard.length === 0 ? (
+                <div className="p-4 text-center text-gray-400 text-sm">
+                  No scores yet. Be the first!
                 </div>
-              ))}
-            </div>
-            {/* Name Input */}
-            <input
-              type="text"
-              value={username || ""}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your name"
-              className="mt-6 w-full px-3 py-2 border bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#4285F4]"
-            />
-            <select
-
-              value={selectedFaculty || ''}
-              onChange={(e) => {
-                const newFaculty = e.target.value;
-                setSelectedFaculty(newFaculty || null);
-                const params = new URLSearchParams();
-                if (newFaculty) {
-                  params.set('selectedFaculty', newFaculty);
-                }
-                if (sandboxData?.sandboxId) {
-                  params.set('sandbox', sandboxData.sandboxId);
-                }
-                router.push(`/?${params.toString()}`);
-              }}
-              className="px-3 py-1.5 text-sm w-full mt-3 bg-white border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#36322F] focus:border-transparent"
-            >
-              <option value="">Select your faculty...</option>
-              {faculties.map(faculty => (
-                <option key={faculty.name} value={faculty.name}>
-                  {faculty.name}
-                </option>
-              ))}
-            </select>
-
-            {/* Action button */}
-            <button
-              disabled={selectedCardId === null || username?.trim() === "" || !selectedFaculty}
-              onClick={() => {
-                const params = new URLSearchParams()
-                if (selectedCardId) params.set('selectedImage', selectedCardId)
-                if (username?.trim()) params.set('username', username.trim())
-                if (selectedFaculty) params.set('selectedFaculty', selectedFaculty)
-                posthog.capture('started_challenge', {
-                  selectedCardId,
-                  username,
-                  selectedFaculty
+              ) : (
+                leaderboard.map((entry) => {
+                  const facultyData = faculties.find(f => f.name === entry.faculty)
+                  return (
+                    <div key={entry.rank} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-700">
+                          {entry.rank}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-semibold text-gray-800 truncate">{entry.name}</span>
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border truncate max-w-[130px] ${facultyData?.color ?? 'bg-gray-50 border-gray-200 text-gray-600'}`}>
+                            {entry.prodi}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0 ml-2">
+                        <div className="text-sm font-semibold text-gray-800">{entry.totalScore} pts</div>
+                        <div className="text-xs text-gray-500">{entry.cardCount} card{entry.cardCount > 1 ? 's' : ''}</div>
+                      </div>
+                    </div>
+                  )
                 })
-                router.push(`/sandbox?${params.toString()}`)
-              }}
-              className={`mt-4 w-full cursor-pointer py-2 rounded-md font-semibold text-white transition-colors
-                ${selectedCardId === null || username?.trim() === '' || !selectedFaculty ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#4285F4] hover:bg-blue-600 shadow-md'}
-                `}
-            >
-              Play Now!
-            </button>
+              )}
+            </div>
+
+            {/* Form */}
+            <div className="mt-6 flex flex-col gap-3">
+              <input
+                type="text"
+                value={username || ""}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your name"
+                className="w-full px-3 py-2 border bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#4285F4]"
+              />
+
+              <select
+                value={selectedFaculty || ''}
+                onChange={(e) => {
+                  const newFaculty = e.target.value;
+                  setSelectedFaculty(newFaculty || null);
+                  setSelectedProdi(null);
+                }}
+                className="px-3 py-1.5 text-sm w-full bg-white border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#36322F] focus:border-transparent"
+              >
+                <option value="">Select your faculty...</option>
+                {faculties.map(faculty => (
+                  <option key={faculty.name} value={faculty.name}>
+                    {faculty.name}
+                  </option>
+                ))}
+              </select>
+
+              {selectedFacultyData && (
+                <select
+                  value={selectedProdi || ''}
+                  onChange={(e) => setSelectedProdi(e.target.value || null)}
+                  className="px-3 py-1.5 text-sm w-full bg-white border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#4285F4] focus:border-transparent"
+                >
+                  <option value="">Select your program studi...</option>
+                  {selectedFacultyData.prodis.map(prodi => (
+                    <option key={prodi} value={prodi}>
+                      {prodi}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              <button
+                disabled={selectedCardId === null || !username?.trim() || !selectedFaculty || !selectedProdi}
+                onClick={() => {
+                  const params = new URLSearchParams()
+                  if (selectedCardId) params.set('selectedImage', selectedCardId)
+                  if (username?.trim()) params.set('username', username.trim())
+                  if (selectedFaculty) params.set('selectedFaculty', selectedFaculty)
+                  if (selectedProdi) params.set('selectedProdi', selectedProdi)
+                  posthog.capture('started_challenge', {
+                    selectedCardId,
+                    username,
+                    selectedFaculty,
+                    selectedProdi,
+                  })
+                  router.push(`/sandbox?${params.toString()}`)
+                }}
+                className={`w-full cursor-pointer py-2 rounded-md font-semibold text-white transition-colors
+                  ${selectedCardId === null || !username?.trim() || !selectedFaculty || !selectedProdi
+                    ? 'bg-gray-300 cursor-not-allowed'
+                    : 'bg-[#4285F4] hover:bg-blue-600 shadow-md'}
+                  `}
+              >
+                Play Now!
+              </button>
+            </div>
           </div>
         </div>
       </div>
