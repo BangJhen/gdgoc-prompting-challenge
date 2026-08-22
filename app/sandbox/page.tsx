@@ -119,11 +119,11 @@ export default function SandboxPage() {
         let interval: NodeJS.Timeout;
         if (showLoadingBackground) {
             const messages = [
-                'Allocating secure cloud environment...',
-                'Writing base React and Tailwind configuration...',
-                'Installing NPM dependencies (this might take a few seconds)...',
-                'Starting Vite development server...',
-                'Connecting to sandbox...'
+                'Creating sandbox...',
+                'Writing configurations...',
+                'Installing packages...',
+                'Starting server...',
+                'Connecting...'
             ];
             let i = 0;
             setLoadingMessage(messages[0]);
