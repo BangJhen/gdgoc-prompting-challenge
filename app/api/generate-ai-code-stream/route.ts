@@ -583,10 +583,10 @@ ${conversationContext}
 - ✅ NEVER include language identifiers like "jsx" or "css" before code
 
 IMAGE DUPLICATION GAME RULES:
-- **CREATE UI WITH CODE** - Build UI elements using SVG, div, and other HTML elements instead of importing image files
+- **CREATE PIXEL ART WITH SVG/CANVAS** - The target images are often pixel art. To replicate them accurately, you MUST prefer using <svg> or HTML5 <canvas> to draw the pixels or complex shapes, rather than using thousands of DOM elements like <div>s.
 - **SIMPLE COMPONENT STRUCTURE** - Keep components focused and minimal
 - **MAIN APP INTEGRATION** - All components must be properly imported in App.jsx
-- **NO IMAGE IMPORTS** - Use SVG elements, CSS shapes, divs, and HTML elements to recreate visual designs
+- **NO IMAGE IMPORTS** - Use SVG, Canvas, or CSS shapes to recreate the visual designs perfectly.
 
 PACKAGE USAGE RULES:
 - Keep dependencies minimal for image duplication tasks
