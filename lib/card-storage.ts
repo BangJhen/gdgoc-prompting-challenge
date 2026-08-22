@@ -40,10 +40,18 @@ export class CardStorage {
   static initializeDefaultCards(): Card[] {
     // faculties list removed as it is handled in page.tsx
 
-    const defaultCards: Card[] = Array.from({ length: 20 }, (_, index) => ({
+    const targetImages = [
+      "Aby", "America", "Banana", "Canada", "Coin", 
+      "Computer", "Cookie", "Cup", "dava", "Duck", 
+      "GDGOC Logo", "Germany", "Indonesia", "Italy", "Japan", 
+      "Lock", "Shield", "Smartphone", "Sword", "Tel-U Logo", 
+      "Treasure", "Trophy"
+    ];
+
+    const defaultCards: Card[] = targetImages.map((name, index) => ({
       id: index + 1,
-      image: `/images/image-${index + 1}.png`,
-      name: `Items ${index + 1}`,
+      image: `/images/${name}.png`,
+      name: name,
       best: null
     }));
 
@@ -55,17 +63,30 @@ export class CardStorage {
       return defaultCards;
     }
 
-    // Check if we need to add any missing cards (new images)
-    const maxExistingId = Math.max(...existingCards.map(card => card.id));
+    // Update existing cards with the new names and images to fix broken paths 
+    // from renamed files, while keeping the user's best scores intact
+    const updatedCards = existingCards.map(card => {
+      const defaultCard = defaultCards.find(dc => dc.id === card.id);
+      if (defaultCard) {
+        return {
+          ...card,
+          image: defaultCard.image,
+          name: defaultCard.name
+        };
+      }
+      return card;
+    });
+
+    // Check if we need to add any missing cards
+    const maxExistingId = Math.max(...existingCards.map(card => card.id), 0);
     const missingCards = defaultCards.filter(card => card.id > maxExistingId);
 
     if (missingCards.length > 0) {
-      const updatedCards = [...existingCards, ...missingCards];
-      this.saveCards(updatedCards);
-      return updatedCards;
+      updatedCards.push(...missingCards);
     }
 
-    return existingCards;
+    this.saveCards(updatedCards);
+    return updatedCards;
   }
 
   static getCardById(cardId: number): Card | null {

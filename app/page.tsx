@@ -9,6 +9,7 @@ import posthog from 'posthog-js'
 import { Volume2, VolumeX } from 'lucide-react'
 import { PixelBackground } from '@/components/pixel-background'
 import { IntroScreen } from '@/components/intro-screen'
+import { SandboxTransition } from '@/components/sandbox-transition'
 
 const Page = () => {
   const router = useRouter()
@@ -19,6 +20,7 @@ const Page = () => {
   const [cards, setCards] = useState<Card[]>([])
   const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<'player' | 'faculty' | 'prodi'>('player')
   const [isMusicPlaying, setIsMusicPlaying] = useState(false)
+  const [isTransitioningToSandbox, setIsTransitioningToSandbox] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const toggleMusic = () => {
@@ -238,8 +240,24 @@ const Page = () => {
 
   const selectedFacultyData = faculties.find(f => f.name === selectedFaculty)
 
+  const handleNavigationToSandbox = () => {
+    const params = new URLSearchParams()
+    if (selectedCardId) params.set('selectedImage', selectedCardId)
+    if (username?.trim()) params.set('username', username.trim())
+    if (selectedFaculty) params.set('selectedFaculty', selectedFaculty)
+    if (selectedProdi) params.set('selectedProdi', selectedProdi)
+    posthog.capture('started_challenge', {
+      selectedCardId,
+      username,
+      selectedFaculty,
+      selectedProdi,
+    })
+    router.push(`/sandbox?${params.toString()}`)
+  }
+
   return (
     <div className="min-h-screen bg-blue-50 py-8 relative overflow-hidden">
+      <SandboxTransition isVisible={isTransitioningToSandbox} onComplete={handleNavigationToSandbox} />
       <IntroScreen onComplete={() => {}} />
       <PixelBackground />
       <div className="container mx-auto px-4 relative z-10">
@@ -263,55 +281,64 @@ const Page = () => {
                 <button
                   key={card.id}
                   onClick={() => setSelectedCardId(card.id.toString())}
-                  className={`text-left cursor-pointer bg-white rounded-lg border transition-shadow duration-300 focus:outline-none w-full 
-                    ${selectedCardIdNumber === card.id ? 'ring-4 ring-[#4285F4] shadow-lg' : 'shadow-sm hover:shadow-md hover:-translate-y-0.5'}
-                    transform transition-transform`}
+                  className={`text-left group relative bg-white border-2 border-slate-800 focus:outline-none w-full 
+                    transform transition-all duration-200 
+                    ${selectedCardIdNumber === card.id 
+                      ? 'ring-4 ring-yellow-400 shadow-[2px_2px_0px_rgba(0,0,0,1)] translate-y-1' 
+                      : 'shadow-[6px_6px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_rgba(0,0,0,1)] hover:-translate-y-1 active:shadow-[0px_0px_0px_rgba(0,0,0,1)] active:translate-y-2'
+                    }`}
                 >
                   {/* Card Image */}
-                  <div className="relative h-36 bg-slate-50 rounded-t-lg overflow-hidden">
+                  <div className="relative h-36 bg-slate-100 border-b-2 border-slate-800 overflow-hidden">
                     <Image
                       src={card.image}
                       alt={`Item ${card.id}`}
                       fill
-                      className="object-contain"
+                      className="object-contain group-hover:scale-110 transition-transform duration-300"
+                      style={{ imageRendering: 'pixelated' }}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = `https://via.placeholder.com/300x200/e5e7eb/6b7280?text=Card+${card.id}`;
                       }}
                     />
+                    {/* Pixel Corner Accents (Decorative) */}
+                    <div className="absolute top-1 left-1 w-2 h-2 bg-slate-800/20"></div>
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-slate-800/20"></div>
+                    <div className="absolute bottom-1 left-1 w-2 h-2 bg-slate-800/20"></div>
+                    <div className="absolute bottom-1 right-1 w-2 h-2 bg-slate-800/20"></div>
                   </div>
 
                   {/* Card Content */}
-                  <div className="p-3 space-y-1">
-                    <h3 className="text-base font-semibold text-gray-800 font-pixelify">{card.name}</h3>
+                  <div className="p-3 space-y-2 relative bg-white">
+                    <h3 className="text-lg font-bold text-gray-800 font-pixelify uppercase tracking-wide group-hover:text-blue-600 transition-colors">{card.name}</h3>
                     {card.best ? (
-                      <>
-                        <div className="flex items-center justify-between text-sm font-pixelify">
-                          <span className="text-gray-600">Best:</span>
-                          <span className="font-medium text-gray-800">{card.best.name}</span>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs font-pixelify">
+                          <span className="text-gray-500 uppercase">Top Player:</span>
+                          <span className="font-bold text-gray-800 truncate max-w-[100px]">{card.best.name}</span>
                         </div>
-                        <div className="flex items-center justify-between text-sm font-pixelify">
-                          <span className="text-gray-600">Prodi:</span>
+                        <div className="flex items-center justify-between text-xs font-pixelify">
+                          <span className="text-gray-500 uppercase">Prodi:</span>
                           <span
-                            className={`font-medium text-[10px] px-1.5 py-0.5 rounded border ${faculties.find((f) => f.name === card.best!.faculty)?.color}`}
+                            className={`font-bold text-[9px] px-1.5 py-0.5 border-2 border-slate-800 ${faculties.find((f) => f.name === card.best!.faculty)?.color || 'bg-gray-100'}`}
                           >
                             {card.best.prodi || card.best.faculty}
                           </span>
                         </div>
-                        {/* Score Bar */}
-                        <div className="mt-2">
-                          <div className="w-full bg-gray-200 rounded-full h-1">
+                        {/* Score Bar with Pixel Style */}
+                        <div className="mt-3">
+                          <div className="w-full bg-slate-200 border-2 border-slate-800 h-3 relative">
                             <div
-                              className={`h-1 rounded-full ${scoreBarColor(card.best.score)}`}
+                              className={`h-full border-r-2 border-slate-800 ${scoreBarColor(card.best.score)}`}
                               style={{ width: `${card.best.score}%` }}
                             />
                           </div>
-                          <div className="text-right text-[10px] text-gray-500 mt-1">{card.best.score}/100</div>
+                          <div className="text-right text-[10px] font-bold text-gray-800 mt-1 font-pixelify">SCORE: {card.best.score}/100</div>
                         </div>
-                      </>
+                      </div>
                     ) : (
-                      <div className="text-sm text-gray-500 font-pixelify mt-2">
-                        No one has taken this challenge yet!
+                      <div className="text-xs text-gray-500 font-pixelify mt-4 py-4 text-center border-2 border-dashed border-gray-300 bg-gray-50">
+                        ? UNCHALLENGED ?
                       </div>
                     )}
                   </div>
@@ -485,23 +512,10 @@ const Page = () => {
               )}
 
               <button
-                disabled={selectedCardId === null || !username?.trim() || !selectedFaculty || !selectedProdi}
-                onClick={() => {
-                  const params = new URLSearchParams()
-                  if (selectedCardId) params.set('selectedImage', selectedCardId)
-                  if (username?.trim()) params.set('username', username.trim())
-                  if (selectedFaculty) params.set('selectedFaculty', selectedFaculty)
-                  if (selectedProdi) params.set('selectedProdi', selectedProdi)
-                  posthog.capture('started_challenge', {
-                    selectedCardId,
-                    username,
-                    selectedFaculty,
-                    selectedProdi,
-                  })
-                  router.push(`/sandbox?${params.toString()}`)
-                }}
+                disabled={selectedCardId === null || !username?.trim() || !selectedFaculty || !selectedProdi || isTransitioningToSandbox}
+                onClick={() => setIsTransitioningToSandbox(true)}
                 className={`w-full cursor-pointer py-2 rounded-md font-semibold text-white transition-colors
-                  ${selectedCardId === null || !username?.trim() || !selectedFaculty || !selectedProdi
+                  ${selectedCardId === null || !username?.trim() || !selectedFaculty || !selectedProdi || isTransitioningToSandbox
                     ? 'bg-gray-300 cursor-not-allowed'
                     : 'bg-[#4285F4] hover:bg-blue-600 shadow-md'}
                   `}
