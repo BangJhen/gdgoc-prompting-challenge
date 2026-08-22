@@ -87,7 +87,7 @@ const GAME_TIPS = [
     'Try to recreate the target image as closely as possible'
 ]
 
-const MAX_PROMPT_COUNT = 3;
+const MAX_PROMPT_COUNT = 5;
 
 export default function SandboxPage() {
     const [sandboxData, setSandboxData] = useState<SandboxData | null>(null);
