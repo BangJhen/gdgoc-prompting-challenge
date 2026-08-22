@@ -353,13 +353,6 @@ const Page = () => {
 
           {/* Leaderboard + Form */}
           <div className="w-full font-pixelify lg:w-80 xl:w-72 flex flex-col gap-4">
-            <button 
-              onClick={() => setShowRules(true)}
-              className="w-full bg-yellow-400 text-slate-900 border-2 border-slate-900 px-4 py-2 font-pixelify font-bold hover:bg-yellow-300 transition-colors shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[0px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2"
-            >
-              <span>❓</span> CARA BERMAIN
-            </button>
-            
             <div className="flex items-center justify-between mb-3 lg:mb-4">
               <h2 className="text-lg lg:text-xl font-bold text-blue-500">
                 🏆 Leaderboard
@@ -520,6 +513,13 @@ const Page = () => {
                   ))}
                 </select>
               )}
+
+              <button 
+                onClick={() => setShowRules(true)}
+                className="w-full bg-yellow-400 text-slate-900 border-2 border-slate-900 px-4 py-2 font-pixelify font-bold hover:bg-yellow-300 transition-colors shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[0px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2"
+              >
+                <span>❓</span> CARA BERMAIN
+              </button>
 
               <button
                 disabled={selectedCardId === null || !username?.trim() || !selectedFaculty || !selectedProdi || isTransitioningToSandbox}
