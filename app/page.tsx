@@ -26,6 +26,7 @@ const HOW_TO_PLAY_STEPS = [
     desc: "Ketik namamu, lalu tekan Play Now! Scan QR code Instagram & Bevy GDGoC untuk verifikasi.",
     badge: "START",
     badgeBg: "bg-blue-500",
+    video: "/images/step1.webp"
   },
   {
     number: "02",
@@ -38,6 +39,7 @@ const HOW_TO_PLAY_STEPS = [
     desc: "Kamu akan diberi 3 gambar acak! Pilih salah satunya dalam 15 detik, atau sistem otomatis memilih.",
     badge: "PICK",
     badgeBg: "bg-yellow-400",
+    video: "/images/step2.webp"
   },
   {
     number: "03",
@@ -50,6 +52,7 @@ const HOW_TO_PLAY_STEPS = [
     desc: "Deskripsikan gambar target dengan kata-katamu sendiri. Kamu punya 5 kali kesempatan prompting!",
     badge: "PROMPT",
     badgeBg: "bg-green-500",
+    video: "/images/step3.webp"
   },
   {
     number: "04",
@@ -62,6 +65,7 @@ const HOW_TO_PLAY_STEPS = [
     desc: "AI menilai hasil terbaikmu dari 5 percobaan. Skor makin tinggi makin mirip! Bisa kamu masuk top 10?",
     badge: "SCORE",
     badgeBg: "bg-red-500",
+    video: "/images/step4.webp"
   },
 ]
 
@@ -229,14 +233,14 @@ const PageContent = () => {
           {/* LEFT — How to Play + See All Cards button */}
           <div className="flex flex-col gap-6">
             {/* Section label */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 mb-2">
               <div className="h-1 flex-1 bg-slate-200 rounded" />
               <span className="font-pixelify text-xs text-slate-500 tracking-widest uppercase">Cara Bermain</span>
               <div className="h-1 flex-1 bg-slate-200 rounded" />
             </div>
 
             {/* Steps grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
               {HOW_TO_PLAY_STEPS.map((step, i) => {
                 const Icon = step.icon
                 const isActive = activeStep === i
@@ -246,7 +250,7 @@ const PageContent = () => {
                     onClick={() => setActiveStep(isActive ? null : i)}
                     className={`
                       group text-left bg-white border-4 border-slate-900 p-5 relative
-                      transition-all duration-150 cursor-pointer
+                      transition-all duration-150 cursor-pointer flex flex-col
                       ${isActive
                         ? `${step.shadow} translate-y-1`
                         : `shadow-[6px_6px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_rgba(0,0,0,1)] hover:-translate-y-1`
@@ -275,10 +279,17 @@ const PageContent = () => {
                       {step.title}
                     </h3>
 
-                    {/* Desc — always visible on active, hidden on small screens when not active */}
-                    <p className={`font-pixelify text-slate-500 text-xs leading-relaxed transition-all duration-200 ${isActive ? 'max-h-40 opacity-100' : 'max-h-0 sm:max-h-40 opacity-0 sm:opacity-100 overflow-hidden sm:overflow-visible'}`}>
-                      {step.desc}
-                    </p>
+                    {/* Desc and Video */}
+                    <div className={`transition-all duration-300 w-full overflow-hidden flex flex-col gap-3 ${isActive ? 'max-h-[500px] opacity-100 mt-2' : 'max-h-0 sm:max-h-[500px] opacity-0 sm:opacity-100 sm:mt-2 sm:overflow-visible'}`}>
+                      <p className="font-pixelify text-slate-500 text-xs leading-relaxed text-left">
+                        {step.desc}
+                      </p>
+                      
+                      <div className="relative aspect-video w-full border-2 border-slate-800 bg-slate-900 overflow-hidden flex items-center justify-center rounded shadow-inner">
+                        <span className="absolute font-pixelify text-slate-500 text-[10px] animate-pulse">Memuat...</span>
+                        <img src={step.video} alt={step.title} className="relative z-10 w-full h-full object-cover" />
+                      </div>
+                    </div>
                   </button>
                 )
               })}
