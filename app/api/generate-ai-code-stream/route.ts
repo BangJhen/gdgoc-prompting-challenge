@@ -586,7 +586,7 @@ ${conversationContext}
 
 IMAGE DUPLICATION GAME RULES:
 - **USE GEOMETRIC SVG PRIMITIVES** - To replicate objects accurately, use standard SVG elements (<rect>, <path>, <circle>, <polygon>) with blocky coordinates to create a retro/pixelated feel.
-- ❌ **NEVER USE 2D ASCII/TEXT ARRAYS** - DO NOT attempt to draw images using 2D arrays of strings (e.g., `[" GGG ", " DDD "]`). LLMs cannot align these properly, and the results are always terrible. Build shapes using mathematical coordinates and SVG primitives instead.
+- ❌ **NEVER USE 2D ASCII/TEXT ARRAYS** - DO NOT attempt to draw images using 2D arrays of strings (e.g., \`[" GGG ", " DDD "]\`). LLMs cannot align these properly, and the results are always terrible. Build shapes using mathematical coordinates and SVG primitives instead.
 - **SIMPLE COMPONENT STRUCTURE** - Keep components focused and minimal
 - **MAIN APP INTEGRATION** - All components must be properly imported in App.jsx
 - **NO IMAGE IMPORTS** - Use SVG or CSS shapes to recreate the visual designs perfectly.
