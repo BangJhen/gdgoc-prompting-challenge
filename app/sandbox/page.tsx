@@ -149,7 +149,7 @@ function SandboxPageContent() {
 
     useEffect(() => {
         if (selectedCardId) {
-            setCurrentCard(CardStorage.getCardById(parseInt(selectedCardId)));
+            CardStorage.getCardById(parseInt(selectedCardId)).then(setCurrentCard);
         }
     }, [selectedCardId]);
 
@@ -755,7 +755,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
     // Core judging logic — called after the user selects a version (or immediately if only 1 exists)
     const submitFinalResult = async (chosenScreenshot: string) => {
         const selectedFaculty = searchParams.get('selectedFaculty');
-        const previousCardLocal = selectedCardId ? CardStorage.getCardById(parseInt(selectedCardId)) : null;
+        const previousCardLocal = selectedCardId ? await CardStorage.getCardById(parseInt(selectedCardId)) : null;
         setPreviousCard(previousCardLocal);
 
         setShowVersionModal(false);
@@ -794,7 +794,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
             if (selectedCardId && username) {
                 const faculty = searchParams.get('selectedFaculty') || '';
                 const prodi = searchParams.get('selectedProdi') || faculty || '';
-                CardStorage.updateCardBestScore(parseInt(selectedCardId), {
+                await CardStorage.updateCardBestScore(parseInt(selectedCardId), {
                     name: username,
                     faculty: faculty,
                     prodi: prodi,
@@ -1889,7 +1889,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                                         <h4 className="text-lg font-semibold text-amber-800 mb-3">Previous Best Score</h4>
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-2xl font-bold text-amber-700">{previousCard.best.score}/100</p>
+                                                <p className="text-2xl font-bold font-sans text-amber-700">{previousCard.best.score}/100</p>
                                                 <p className="text-sm text-amber-600">by {previousCard.best.name}</p>
                                                 <p className="text-xs text-amber-500">{previousCard.best.faculty}</p>
                                             </div>
@@ -1947,7 +1947,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                                             {judgingStatus === 'completed-first-own' && (
                                                 <div>
                                                     <div className="mb-4">
-                                                        <div className="text-4xl font-bold text-blue-600 mb-2"><AnimatedScore targetScore={similarityScore || 0} /></div>
+                                                        <div className="text-4xl font-bold font-sans text-blue-600 mb-2"><AnimatedScore targetScore={similarityScore || 0} /></div>
                                                         <div className="flex items-center justify-center gap-2 text-blue-700">
                                                             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                                                                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -1962,7 +1962,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                                             {judgingStatus === 'completed-higher-score' && (
                                                 <div>
                                                     <div className="mb-4">
-                                                        <div className="text-4xl font-bold text-green-600 mb-2"><AnimatedScore targetScore={similarityScore || 0} /></div>
+                                                        <div className="text-4xl font-bold font-sans text-green-600 mb-2"><AnimatedScore targetScore={similarityScore || 0} /></div>
                                                         <div className="flex items-center justify-center gap-2 text-green-700">
                                                             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                                                                 <path d="M7 14l3-3 3 3 5-5-1.5-1.5L12 12l-1.5-1.5L7 14z"/>
@@ -1978,7 +1978,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                                             {judgingStatus === 'completed-lower-score' && (
                                                 <div>
                                                     <div className="mb-4">
-                                                        <div className="text-4xl font-bold text-blue-600 mb-2"><AnimatedScore targetScore={similarityScore || 0} /></div>
+                                                        <div className="text-4xl font-bold font-sans text-blue-600 mb-2"><AnimatedScore targetScore={similarityScore || 0} /></div>
                                                         <div className="flex items-center justify-center gap-2 text-blue-700">
                                                             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                                                                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>

@@ -131,7 +131,7 @@ export function CardSelectionModal({ cards, onSelect }: CardSelectionModalProps)
                     {card.name}
                   </p>
                   {card.best ? (
-                    <p className="font-pixelify text-[10px] text-slate-500 mt-0.5">
+                    <p className="text-[10px] text-slate-500 mt-0.5 font-sans font-medium tracking-wide">
                       Top: <span className="text-[#4285F4] font-bold">{card.best.score}/100</span>
                     </p>
                   ) : (

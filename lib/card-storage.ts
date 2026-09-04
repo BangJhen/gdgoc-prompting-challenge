@@ -3,28 +3,36 @@ import { Card, BestScore } from '@/types/card';
 const CARDS_STORAGE_KEY = 'gdgoc-cards';
 
 export class CardStorage {
-  static getCards(): Card[] {
+  static async getCards(): Promise<Card[]> {
     if (typeof window === 'undefined') return [];
     try {
-      const stored = localStorage.getItem(CARDS_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
+      const res = await fetch('/api/scores');
+      if (res.ok) {
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      }
+      return [];
     } catch (error) {
-      console.error('Error reading cards from localStorage:', error);
+      console.error('Error fetching cards from API:', error);
       return [];
     }
   }
 
-  static saveCards(cards: Card[]): void {
+  static async saveCards(cards: Card[]): Promise<void> {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem(CARDS_STORAGE_KEY, JSON.stringify(cards));
+      await fetch('/api/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cards)
+      });
     } catch (error) {
-      console.error('Error saving cards to localStorage:', error);
+      console.error('Error saving cards to API:', error);
     }
   }
 
-  static updateCardBestScore(cardId: number, bestScore: BestScore): void {
-    const cards = this.getCards();
+  static async updateCardBestScore(cardId: number, bestScore: BestScore): Promise<void> {
+    const cards = await this.getCards();
     const cardIndex = cards.findIndex(card => card.id === cardId);
 
     if (cardIndex !== -1) {
@@ -32,14 +40,12 @@ export class CardStorage {
       const currentBest = cards[cardIndex].best;
       if (!currentBest || bestScore.score > currentBest.score) {
         cards[cardIndex].best = bestScore;
-        this.saveCards(cards);
+        await this.saveCards(cards);
       }
     }
   }
 
-  static initializeDefaultCards(): Card[] {
-    // faculties list removed as it is handled in page.tsx
-
+  static async initializeDefaultCards(): Promise<Card[]> {
     const targetImages = [
       "Aby", "America", "Banana", "Canada", "Coin", 
       "Computer", "Cookie", "Cup", "dava", "Duck", 
@@ -55,11 +61,11 @@ export class CardStorage {
       best: null
     }));
 
-    const existingCards = this.getCards();
+    const existingCards = await this.getCards();
 
     // If no cards exist, initialize with defaults
     if (existingCards.length === 0) {
-      this.saveCards(defaultCards);
+      await this.saveCards(defaultCards);
       return defaultCards;
     }
 
@@ -85,12 +91,12 @@ export class CardStorage {
       updatedCards.push(...missingCards);
     }
 
-    this.saveCards(updatedCards);
+    await this.saveCards(updatedCards);
     return updatedCards;
   }
 
-  static getCardById(cardId: number): Card | null {
-    const cards = this.getCards();
+  static async getCardById(cardId: number): Promise<Card | null> {
+    const cards = await this.getCards();
     return cards.find(card => card.id === cardId) || null;
   }
 }

@@ -118,7 +118,7 @@ function AllCardsModal({ cards, onClose }: { cards: Card[]; onClose: () => void 
               <div className="p-2">
                 <p className="font-pixelify text-[11px] font-bold text-slate-800 uppercase truncate">{card.name}</p>
                 {card.best ? (
-                  <p className="font-pixelify text-[10px] text-[#4285F4]">⭐ {card.best.score}/100</p>
+                  <p className="font-bold text-[10px] text-[#4285F4]">⭐ {card.best.score}/100</p>
                 ) : (
                   <p className="font-pixelify text-[10px] text-slate-400 italic">Unchallenged</p>
                 )}
@@ -155,7 +155,19 @@ const PageContent = () => {
   }
 
   useEffect(() => {
-    setCards(CardStorage.initializeDefaultCards())
+    // Initial fetch and initialization
+    CardStorage.initializeDefaultCards().then(setCards)
+
+    // Poll for fresh scores every 5 seconds for real-time leaderboard
+    const interval = setInterval(() => {
+      CardStorage.getCards().then(fetchedCards => {
+        if (fetchedCards.length > 0) {
+          setCards(fetchedCards);
+        }
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [])
 
   const leaderboard = (() => {
@@ -390,8 +402,8 @@ const PageContent = () => {
                         </div>
                       </div>
                       <div className="shrink-0 ml-2 text-right">
-                        <span className="font-pixelify text-sm font-bold text-[#4285F4]">{entry.totalScore}</span>
-                        <span className="font-pixelify text-[10px] text-slate-400 ml-1">pts</span>
+                        <span className="font-bold text-sm text-[#4285F4]">{entry.totalScore}</span>
+                        <span className="font-bold text-[10px] text-slate-400 ml-1">pts</span>
                       </div>
                     </li>
                   ))}
