@@ -585,10 +585,11 @@ ${conversationContext}
 - ✅ NEVER include language identifiers like "jsx" or "css" before code
 
 IMAGE DUPLICATION GAME RULES:
-- **CREATE PIXEL ART WITH SVG/CANVAS** - The target images are often pixel art. To replicate them accurately, you MUST prefer using <svg> or HTML5 <canvas> to draw the pixels or complex shapes, rather than using thousands of DOM elements like <div>s.
+- **USE GEOMETRIC SVG PRIMITIVES** - To replicate objects accurately, use standard SVG elements (<rect>, <path>, <circle>, <polygon>) with blocky coordinates to create a retro/pixelated feel.
+- ❌ **NEVER USE 2D ASCII/TEXT ARRAYS** - DO NOT attempt to draw images using 2D arrays of strings (e.g., `[" GGG ", " DDD "]`). LLMs cannot align these properly, and the results are always terrible. Build shapes using mathematical coordinates and SVG primitives instead.
 - **SIMPLE COMPONENT STRUCTURE** - Keep components focused and minimal
 - **MAIN APP INTEGRATION** - All components must be properly imported in App.jsx
-- **NO IMAGE IMPORTS** - Use SVG, Canvas, or CSS shapes to recreate the visual designs perfectly.
+- **NO IMAGE IMPORTS** - Use SVG or CSS shapes to recreate the visual designs perfectly.
 
 PACKAGE USAGE RULES:
 - Keep dependencies minimal for image duplication tasks
