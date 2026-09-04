@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Together from 'together-ai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { generateText } from 'ai';
 
 const together = new Together({
     apiKey: process.env.TOGETHER_API_KEY,
+});
+
+const googleGenerativeAI = createGoogleGenerativeAI({
+  apiKey: process.env.GEMINI_API_KEY,
 });
 
 export async function POST(request: NextRequest) {
@@ -17,14 +23,27 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'TOGETHER_API_KEY is not configured' }, { status: 500 });
         }
 
-        // Build a pixel-art focused prompt
-        const pixelArtPrompt = `pixel art style, 16-bit retro game art, clean pixel art, ${prompt}, simple shapes, limited color palette, no anti-aliasing, crisp edges`;
+        // Enhance the prompt using Gemini
+        const model = googleGenerativeAI('gemini-2.5-flash');
+        const enhancementPrompt = `You are an expert prompt engineer for pixel art generation. 
+The user has provided a base prompt. Your job is to improve it and make it highly descriptive, translating it to English if it's in another language (like Indonesian). 
+Ensure the prompt specifies it should be in a 16-bit retro game art style with a limited color palette. 
+Keep it concise but highly descriptive of the visual elements. Do not include introductory text, just output the final prompt.
 
-        console.log('[generate-image] Generating image with prompt:', pixelArtPrompt);
+User's prompt: "${prompt}"`;
+
+        const { text: enhancedPrompt } = await generateText({
+            model,
+            prompt: enhancementPrompt,
+        });
+
+        const finalPrompt = enhancedPrompt.trim();
+        console.log('[generate-image] Original prompt:', prompt);
+        console.log('[generate-image] Enhanced prompt:', finalPrompt);
 
         const response = await together.images.generate({
-            model: 'black-forest-labs/FLUX.1-schnell-Free',
-            prompt: pixelArtPrompt,
+            model: 'Rundiffusion/Juggernaut-Lightning-Flux',
+            prompt: finalPrompt,
             width: 512,
             height: 512,
             steps: 4,

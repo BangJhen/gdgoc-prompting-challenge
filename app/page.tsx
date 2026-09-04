@@ -339,7 +339,7 @@ const PageContent = () => {
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="Masukkan namamu..."
                       className="w-full pl-9 pr-3 py-2.5 border-2 border-slate-300 bg-white font-pixelify text-sm text-slate-800 focus:outline-none focus:border-[#4285F4] transition-colors placeholder:text-slate-400"
-                      onKeyDown={(e) => { if (e.key === 'Enter' && canPlay) setIsLocked(true) }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && canPlay) setShowCardSelector(true) }}
                     />
                   </div>
                 </div>
@@ -347,7 +347,7 @@ const PageContent = () => {
                 <button
                   id="play-now-button"
                   disabled={!canPlay}
-                  onClick={() => setIsLocked(true)}
+                  onClick={() => setShowCardSelector(true)}
                   className={`
                     w-full py-3.5 font-pixelify font-bold text-lg uppercase tracking-wide
                     border-4 border-slate-900 transition-all duration-150

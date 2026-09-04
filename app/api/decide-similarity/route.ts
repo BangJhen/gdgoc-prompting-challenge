@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText } from 'ai';
+import fs from 'fs';
+import path from 'path';
 
 const googleGenerativeAI = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -11,21 +13,43 @@ export async function POST(request: NextRequest) {
     // Parse the multipart form data
     const formData = await request.formData();
     const originalImage = formData.get('original') as File;
-    const generatedImage = formData.get('generated') as File;
+    const generatedImage = formData.get('generated') as File | null;
+    const generatedImageUrl = formData.get('generatedUrl') as string | null;
+    const username = formData.get('username') as string | null;
+    const cardId = formData.get('cardId') as string | null;
 
-    if (!originalImage || !generatedImage) {
+    if (!originalImage || (!generatedImage && !generatedImageUrl)) {
       return NextResponse.json(
         { error: 'Both original and generated images are required' },
         { status: 400 }
       );
     }
 
-    // Convert images to base64
+    // Convert original image to base64
     const originalBuffer = await originalImage.arrayBuffer();
-    const generatedBuffer = await generatedImage.arrayBuffer();
-
     const originalBase64 = Buffer.from(originalBuffer).toString('base64');
-    const generatedBase64 = Buffer.from(generatedBuffer).toString('base64');
+    
+    // Handle generated image (could be File, data URL, or external URL)
+    let generatedBase64 = '';
+    let generatedImageType = 'image/png';
+
+    if (generatedImage) {
+      const generatedBuffer = await generatedImage.arrayBuffer();
+      generatedBase64 = Buffer.from(generatedBuffer).toString('base64');
+      generatedImageType = generatedImage.type;
+    } else if (generatedImageUrl) {
+      if (generatedImageUrl.startsWith('data:')) {
+        const parts = generatedImageUrl.split(',');
+        generatedBase64 = parts[1];
+        generatedImageType = parts[0].split(':')[1].split(';')[0];
+      } else {
+        const response = await fetch(generatedImageUrl);
+        if (!response.ok) throw new Error('Failed to fetch generated image from URL');
+        const arrayBuffer = await response.arrayBuffer();
+        generatedBase64 = Buffer.from(arrayBuffer).toString('base64');
+        generatedImageType = response.headers.get('content-type') || 'image/png';
+      }
+    }
 
     // Use Gemini to analyze similarity
     const model = googleGenerativeAI('gemini-2.5-flash');
@@ -50,7 +74,7 @@ Please analyze both images carefully and provide only a numerical score between 
             },
             {
               type: 'image',
-              image: `data:${generatedImage.type};base64,${generatedBase64}`,
+              image: `data:${generatedImageType};base64,${generatedBase64}`,
             },
           ],
         },
@@ -62,10 +86,34 @@ Please analyze both images carefully and provide only a numerical score between 
     const scoreMatch = responseText.match(/\b(\d{1,3})\b/);
     const score = scoreMatch ? Math.min(100, Math.max(0, parseInt(scoreMatch[1]))) : 0;
 
+    // Save the submission locally if username is provided
+    let savedImagePath = null;
+    if (username && generatedBase64) {
+      try {
+        const submissionsDir = path.join(process.cwd(), 'public', 'submissions');
+        if (!fs.existsSync(submissionsDir)) {
+          fs.mkdirSync(submissionsDir, { recursive: true });
+        }
+        
+        // Clean username for safe filename
+        const safeUsername = username.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const timestamp = new Date().getTime(); // Unix timestamp
+        const filename = `${safeUsername}_card${cardId || 'unknown'}_score${score}_${timestamp}.png`;
+        const filePath = path.join(submissionsDir, filename);
+        
+        fs.writeFileSync(filePath, Buffer.from(generatedBase64, 'base64'));
+        savedImagePath = `/submissions/${filename}`;
+        console.log(`Saved submission to ${filePath}`);
+      } catch (saveError) {
+        console.error('Error saving submission image:', saveError);
+      }
+    }
+
     return NextResponse.json({
       score,
       originalImageType: originalImage.type,
-      generatedImageType: generatedImage.type,
+      generatedImageType: generatedImageType,
+      savedImagePath,
     });
 
   } catch (error) {

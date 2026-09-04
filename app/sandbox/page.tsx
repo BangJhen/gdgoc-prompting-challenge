@@ -53,9 +53,7 @@ const GAME_TIPS = [
     'Describe the lighting and color palette',
     'Start simple, then add details in next prompts',
 ];
-
-const MAX_PROMPT_COUNT = 5;
-
+const MAX_PROMPT_COUNT = 2;
 function SandboxPageContent() {
     const [loading, setLoading] = useState(false);
     const [promptInput, setPromptInput] = useState('');
@@ -85,6 +83,31 @@ function SandboxPageContent() {
     const [judgingStatus, setJudgingStatus] = useState<
         'submitting' | 'grading' | 'completed-bridging' | 'completed-first-own' | 'completed-higher-score' | 'completed-lower-score' | 'failed' | null
     >(null);
+
+    const [timeLeft, setTimeLeft] = useState(240); // 4 minutes
+
+    // Handle timer
+    useEffect(() => {
+        if (timeLeft > 0 && !challengeCompleted && !judgingStatus && !showVersionModal) {
+            const timerId = setInterval(() => {
+                setTimeLeft(prev => prev - 1);
+            }, 1000);
+            return () => clearInterval(timerId);
+        } else if (timeLeft === 0 && !challengeCompleted && !judgingStatus) {
+            if (generationHistory.length === 0 && !generatedImage) {
+                alert("Time's up! You haven't generated any images. Returning to home...");
+                resetGame();
+            } else {
+                finishChallenge();
+            }
+        }
+    }, [timeLeft, challengeCompleted, judgingStatus, showVersionModal]);
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
 
     const [backgroundMusic] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -146,15 +169,13 @@ function SandboxPageContent() {
             if (!originalImageResponse.ok) throw new Error('Failed to load original image');
             const originalImageBlob = await originalImageResponse.blob();
 
-            // Load generated image as blob
-            const generatedResponse = await fetch(chosenImageUrl);
-            const generatedBlob = await generatedResponse.blob();
-
             // Compare images
             setJudgingStatus('grading');
             const formData = new FormData();
             formData.append('original', originalImageBlob, 'original.png');
-            formData.append('generated', generatedBlob, 'generated.png');
+            formData.append('generatedUrl', chosenImageUrl);
+            formData.append('username', username || 'Anonymous');
+            formData.append('cardId', selectedCardId || 'Unknown');
 
             const similarityResponse = await fetch('/api/decide-similarity', {
                 method: 'POST',
@@ -511,6 +532,21 @@ function SandboxPageContent() {
                 <div className="flex items-center gap-4">
                     <Image src="/images/logo.png" alt="Logo" width={24} height={24} className="object-contain" />
                     <h1 className="text-lg font-semibold font-pixelify">Hello {username}! — GDGoC Prompting Challenge</h1>
+                    
+                    {/* Timer Display */}
+                    {!challengeCompleted && (
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-[10px] font-pixelify text-sm font-medium border-2 ${
+                            timeLeft <= 60 
+                                ? 'bg-red-50 text-red-600 border-red-200 animate-pulse' 
+                                : 'bg-slate-100 text-slate-700 border-slate-200'
+                        }`}>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {formatTime(timeLeft)}
+                        </div>
+                    )}
+
                     <span className={`text-sm px-3 py-1.5 rounded-[10px] text-white font-medium [box-shadow:inset_0px_-2px_0px_0px_#171310,_0px_1px_6px_0px_rgba(58,_33,_8,_58%)] ${
                         challengeCompleted
                             ? 'bg-green-600'

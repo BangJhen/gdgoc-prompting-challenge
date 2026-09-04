@@ -66,7 +66,7 @@ function VerifyContent() {
 
         <div className="flex flex-col gap-4 mb-8">
           <a
-            href="https://www.instagram.com/gdgoctelkomunivbdg/"
+            href="https://www.instagram.com/gdgoc.telkomunivbdg/"
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-3 bg-pink-50 hover:bg-pink-100 border-2 border-pink-500 p-3 rounded-lg transition-colors"

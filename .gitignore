@@ -56,3 +56,9 @@ e2b-template-*
 *.temp
 repomix-output.txt
 bun.lockb
+
+# Challenge Data
+data/
+public/submissions/
+gameplay_demo_new_*.webp
+

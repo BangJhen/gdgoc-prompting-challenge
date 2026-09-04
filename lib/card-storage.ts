@@ -47,19 +47,23 @@ export class CardStorage {
 
   static async initializeDefaultCards(): Promise<Card[]> {
     const targetImages = [
-      "Aby", "America", "Banana", "Canada", "Coin", 
-      "Computer", "Cookie", "Cup", "dava", "Duck", 
-      "GDGOC Logo", "Germany", "Indonesia", "Italy", "Japan", 
-      "Lock", "Shield", "Smartphone", "Sword", "Tel-U Logo", 
-      "Treasure", "Trophy"
+      "Aby.png", "America.png", "Banana.png", "Canada.png", "Coin.png", 
+      "Computer.png", "Cookie.png", "Cup.png", "dava.png", "Duck.png", 
+      "GDGOC Logo.png", "Germany.png", "Indonesia.png", "Italy.png", "Japan.png", 
+      "Lock.png", "Shield.png", "Smartphone.png", "Sword.png", "Tel-U Logo.png", 
+      "Treasure.png", "Trophy.png", "Gojo Satoru.jpeg", "Luffy.jpeg", "No Na Baila.jpeg", "Spiderman.jpg"
     ];
 
-    const defaultCards: Card[] = targetImages.map((name, index) => ({
-      id: index + 1,
-      image: `/images/${name}.png`,
-      name: name,
-      best: null
-    }));
+    const defaultCards: Card[] = targetImages.map((filename, index) => {
+      // Remove the extension for the display name
+      const name = filename.replace(/\.[^/.]+$/, "");
+      return {
+        id: index + 1,
+        image: `/images/${filename}`,
+        name: name,
+        best: null
+      };
+    });
 
     const existingCards = await this.getCards();
 

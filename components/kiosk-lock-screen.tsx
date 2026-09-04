@@ -23,7 +23,6 @@ export function KioskLockScreen({ isLocked, onUnlocked, onCancel }: KioskLockScr
     }
   }, []);
 
-  // Fetch a new session when locked
   useEffect(() => {
     if (isLocked) {
       setPollingError(false);
