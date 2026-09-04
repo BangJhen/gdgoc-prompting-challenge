@@ -121,7 +121,7 @@ export default function AISandboxPage() {
     thinkingText?: string;
     thinkingDuration?: number;
     currentFile?: { path: string; content: string; type: string };
-    files: Array<{ path: string; content: string; type: string; completed: boolean }>;
+    files: Array<{ path: string; content: string; type: string; completed: boolean; edited?: boolean }>;
     lastProcessedPosition: number;
     isEdit?: boolean;
   }>({
@@ -532,7 +532,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                   } else if (data.message.includes('Creating files') || data.message.includes('Applying')) {
                     setCodeApplicationState({ 
                       stage: 'applying',
-                      filesGenerated: results.filesCreated 
+                      filesGenerated: data.filesCreated || data.files 
                     });
                   }
                   break;
@@ -622,7 +622,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
       
       // Process final data
       if (finalData && finalData.type === 'complete') {
-        const data = {
+        const data: any = {
           success: true,
           results: finalData.results,
           explanation: finalData.explanation,
@@ -1013,7 +1013,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                       // Create a map of edited files
                       const editedFiles = new Set(
                         generationProgress.files
-                          .filter(f => f.edited)
+                          .filter(f => (f as any).edited)
                           .map(f => f.path)
                       );
                       
@@ -1026,7 +1026,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                         if (!fileTree[dir]) fileTree[dir] = [];
                         fileTree[dir].push({
                           name: fileName,
-                          edited: file.edited || false
+                          edited: (file as any).edited || false
                         });
                       });
                       
@@ -2992,7 +2992,7 @@ Focus on the key sections and content, making it clean and modern.`;
                 >
                   {appConfig.ai.availableModels.map(model => (
                     <option key={model} value={model}>
-                      {appConfig.ai.modelDisplayNames[model] || model}
+                      {(appConfig.ai.modelDisplayNames as any)[model] || model}
                     </option>
                   ))}
                 </select>
@@ -3024,7 +3024,7 @@ Focus on the key sections and content, making it clean and modern.`;
           >
             {appConfig.ai.availableModels.map(model => (
               <option key={model} value={model}>
-                {appConfig.ai.modelDisplayNames[model] || model}
+                {(appConfig.ai.modelDisplayNames as any)[model] || model}
               </option>
             ))}
           </select>

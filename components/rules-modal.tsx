@@ -55,7 +55,7 @@ export const RulesModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                 <div>
                   <h3 className="text-xl font-bold mb-1 uppercase text-slate-800">Isi Data Player</h3>
                   <p className="text-sm md:text-base leading-relaxed text-slate-600 font-sans font-medium">
-                    Masukkan nama kerenmu (Username), lalu pilih asal Fakultas dan Program Studi (Khusus mahasiswa Telkom University). Banggakan jurusanmu di Leaderboard!
+                    Masukkan nama kerenmu (Username) untuk mulai bermain dan bersaing di Leaderboard!
                   </p>
                 </div>
               </div>

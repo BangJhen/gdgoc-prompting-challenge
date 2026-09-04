@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { appConfig } from '@/config/app.config';
 import { Button } from '@/components/ui/button';
@@ -89,7 +89,7 @@ const GAME_TIPS = [
 
 const MAX_PROMPT_COUNT = 5;
 
-export default function SandboxPage() {
+function SandboxPageContent() {
     const [sandboxData, setSandboxData] = useState<SandboxData | null>(null);
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState({ text: 'Not connected', active: false });
@@ -782,25 +782,23 @@ Tip: I automatically detect and install npm packages from your code imports (lik
             setChallengeCompleted(true);
 
             if (selectedCardId && username) {
-                const faculty = searchParams.get('selectedFaculty');
+                const faculty = searchParams.get('selectedFaculty') || '';
                 const prodi = searchParams.get('selectedProdi') || faculty || '';
-                if (faculty) {
-                    CardStorage.updateCardBestScore(parseInt(selectedCardId), {
-                        name: username,
-                        faculty: faculty,
-                        prodi: prodi,
-                        score: similarityData.score
-                    });
-                    if (previousCardLocal?.best?.score === null) {
-                        setTimeout(() => setJudgingStatus('completed-first-own'), 500);
-                        posthog.capture('finished_challenge', { selectedCardId, username, selectedFaculty, similarityScore, type: 'first_own' });
-                    } else if (previousCardLocal?.best?.score && similarityData.score < previousCardLocal.best.score) {
-                        setTimeout(() => setJudgingStatus('completed-lower-score'), 3000);
-                        posthog.capture('finished_challenge', { selectedCardId, username, selectedFaculty, similarityScore, type: 'lower_score' });
-                    } else {
-                        setTimeout(() => setJudgingStatus('completed-higher-score'), 3000);
-                        posthog.capture('finished_challenge', { selectedCardId, username, selectedFaculty, similarityScore, type: 'higher_score' });
-                    }
+                CardStorage.updateCardBestScore(parseInt(selectedCardId), {
+                    name: username,
+                    faculty: faculty,
+                    prodi: prodi,
+                    score: similarityData.score
+                });
+                if (previousCardLocal?.best?.score === null) {
+                    setTimeout(() => setJudgingStatus('completed-first-own'), 500);
+                    posthog.capture('finished_challenge', { selectedCardId, username, similarityScore, type: 'first_own' });
+                } else if (previousCardLocal?.best?.score && similarityData.score < previousCardLocal.best.score) {
+                    setTimeout(() => setJudgingStatus('completed-lower-score'), 3000);
+                    posthog.capture('finished_challenge', { selectedCardId, username, similarityScore, type: 'lower_score' });
+                } else {
+                    setTimeout(() => setJudgingStatus('completed-higher-score'), 3000);
+                    posthog.capture('finished_challenge', { selectedCardId, username, similarityScore, type: 'higher_score' });
                 }
             }
 
@@ -2384,5 +2382,13 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function SandboxPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center bg-[#171310] font-pixelify text-2xl text-white">Loading sandbox...</div>}>
+            <SandboxPageContent />
+        </Suspense>
     );
 }

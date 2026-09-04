@@ -9,13 +9,12 @@ This React application is an AI-powered image recreation game where players comp
 ## Features ✨
 - **Retro Pixel Art Aesthetic:** Enjoy a fun, interactive UI featuring falling pixels, 3D blocky text, and arcade-style transitions!
 - **Background Music (BGM):** Immersive 8-bit style background music to keep you in the zone.
-- **Telkom University Integration:** Select your Faculty and Program Studi (Prodi) to represent your major on the leaderboard.
-- **Leaderboard System:** Compete in Player, Faculty, and Prodi leaderboards!
+- **Leaderboard System:** Compete on the player leaderboard and aim for the top score!
 
 ## How to Play 🕹️
 
 1. **Select a Picture**: Choose from available retro-themed reference images to recreate.
-2. **Enter Details**: Provide your username, choose your Telkom University Faculty, and select your Prodi.
+2. **Enter Details**: Provide your username to join the challenge.
 3. **Prompt it!**: Write a prompt that guides the AI to generate an image as close as possible to the original reference.
 4. **Beat the Score**: Your generated image will be scored based on similarity. Aim for 100/100 and climb the leaderboards!
 

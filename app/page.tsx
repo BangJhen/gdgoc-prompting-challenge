@@ -11,18 +11,17 @@ import { PixelBackground } from '@/components/pixel-background'
 import { IntroScreen } from '@/components/intro-screen'
 import { SandboxTransition } from '@/components/sandbox-transition'
 import { RulesModal } from '@/components/rules-modal'
+import { KioskLockScreen } from '@/components/kiosk-lock-screen'
 
-const Page = () => {
+const PageContent = () => {
   const router = useRouter()
   const [selectedCardId, setSelectedCardId] = useQueryState('selectedImage')
   const [username, setUsername] = useQueryState('username')
-  const [selectedFaculty, setSelectedFaculty] = useQueryState('selectedFaculty')
-  const [selectedProdi, setSelectedProdi] = useQueryState('selectedProdi')
   const [cards, setCards] = useState<Card[]>([])
-  const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<'player' | 'faculty' | 'prodi'>('player')
   const [isMusicPlaying, setIsMusicPlaying] = useState(false)
   const [isTransitioningToSandbox, setIsTransitioningToSandbox] = useState(false)
   const [showRules, setShowRules] = useState(false)
+  const [isLocked, setIsLocked] = useState(false)
   
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -148,7 +147,7 @@ const Page = () => {
 
     cards.forEach((card) => {
       if (!card.best) return
-      const key = `${card.best.name}__${card.best.prodi ?? card.best.faculty}`
+      const key = card.best.name
       const existing = userMap.get(key)
       if (existing) {
         existing.totalScore += card.best.score
@@ -156,8 +155,8 @@ const Page = () => {
       } else {
         userMap.set(key, {
           name: card.best.name,
-          prodi: card.best.prodi || card.best.faculty,
-          faculty: card.best.faculty,
+          prodi: card.best.prodi || card.best.faculty || '',
+          faculty: card.best.faculty || '',
           totalScore: card.best.score,
           cardCount: 1,
         })
@@ -173,93 +172,27 @@ const Page = () => {
       .map((entry, idx) => ({ ...entry, rank: idx + 1 }))
   })()
 
-  // Build leaderboard ranking for Faculties
-  const facultyLeaderboard = (() => {
-    const facultyMap = new Map<string, {
-      name: string;
-      totalScore: number;
-      cardCount: number;
-    }>()
-
-    cards.forEach((card) => {
-      if (!card.best) return
-      const key = card.best.faculty
-      const existing = facultyMap.get(key)
-      if (existing) {
-        existing.totalScore += card.best.score
-        existing.cardCount += 1
-      } else {
-        facultyMap.set(key, {
-          name: card.best.faculty,
-          totalScore: card.best.score,
-          cardCount: 1,
-        })
-      }
-    })
-
-    return Array.from(facultyMap.values())
-      .sort((a, b) => {
-        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
-        return b.cardCount - a.cardCount
-      })
-      .slice(0, 10)
-      .map((entry, idx) => ({ ...entry, rank: idx + 1 }))
-  })()
-
-  // Build leaderboard ranking for Prodis
-  const prodiLeaderboard = (() => {
-    const prodiMap = new Map<string, {
-      name: string;
-      faculty: string;
-      totalScore: number;
-      cardCount: number;
-    }>()
-
-    cards.forEach((card) => {
-      if (!card.best) return
-      const key = card.best.prodi || card.best.faculty
-      const existing = prodiMap.get(key)
-      if (existing) {
-        existing.totalScore += card.best.score
-        existing.cardCount += 1
-      } else {
-        prodiMap.set(key, {
-          name: card.best.prodi || card.best.faculty,
-          faculty: card.best.faculty,
-          totalScore: card.best.score,
-          cardCount: 1,
-        })
-      }
-    })
-
-    return Array.from(prodiMap.values())
-      .sort((a, b) => {
-        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
-        return b.cardCount - a.cardCount
-      })
-      .slice(0, 10)
-      .map((entry, idx) => ({ ...entry, rank: idx + 1 }))
-  })()
-
-  const selectedFacultyData = faculties.find(f => f.name === selectedFaculty)
-
   const handleNavigationToSandbox = () => {
     const params = new URLSearchParams()
     if (selectedCardId) params.set('selectedImage', selectedCardId)
     if (username?.trim()) params.set('username', username.trim())
-    if (selectedFaculty) params.set('selectedFaculty', selectedFaculty)
-    if (selectedProdi) params.set('selectedProdi', selectedProdi)
     posthog.capture('started_challenge', {
       selectedCardId,
       username,
-      selectedFaculty,
-      selectedProdi,
     })
     router.push(`/sandbox?${params.toString()}`)
   }
 
   return (
     <div className="min-h-screen bg-blue-50 py-8 relative overflow-hidden">
+      <KioskLockScreen 
+        isLocked={isLocked} 
+        onUnlocked={() => {
+          setIsLocked(false);
+          setIsTransitioningToSandbox(true);
+        }} 
+        onCancel={() => setIsLocked(false)}
+      />
       <SandboxTransition isVisible={isTransitioningToSandbox} onComplete={handleNavigationToSandbox} />
       <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
       <IntroScreen onComplete={() => {}} />
@@ -328,14 +261,16 @@ const Page = () => {
                           <span className="text-gray-500 uppercase">Top Player:</span>
                           <span className="font-bold text-gray-800 truncate max-w-[100px]">{card.best.name}</span>
                         </div>
-                        <div className="flex items-center justify-between text-xs font-pixelify">
-                          <span className="text-gray-500 uppercase">Prodi:</span>
-                          <span
-                            className={`font-bold text-[9px] px-1.5 py-0.5 border-2 border-slate-800 ${faculties.find((f) => f.name === card.best!.faculty)?.color || 'bg-gray-100'}`}
-                          >
-                            {card.best.prodi || card.best.faculty}
-                          </span>
-                        </div>
+                        {card.best.prodi || card.best.faculty ? (
+                          <div className="flex items-center justify-between text-xs font-pixelify">
+                            <span className="text-gray-500 uppercase">Prodi:</span>
+                            <span
+                              className={`font-bold text-[9px] px-1.5 py-0.5 border-2 border-slate-800 ${faculties.find((f) => f.name === card.best!.faculty)?.color || 'bg-gray-100'}`}
+                            >
+                              {card.best.prodi || card.best.faculty}
+                            </span>
+                          </div>
+                        ) : null}
                         {/* Score Bar with Pixel Style */}
                         <div className="mt-3">
                           <div className="w-full bg-slate-200 border-2 border-slate-800 h-3 relative">
@@ -365,117 +300,36 @@ const Page = () => {
                 🏆 Leaderboard
               </h2>
             </div>
-            {/* Tabs */}
-            <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
-              <button
-                onClick={() => setActiveLeaderboardTab('player')}
-                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${activeLeaderboardTab === 'player' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                Player
-              </button>
-              <button
-                onClick={() => setActiveLeaderboardTab('faculty')}
-                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${activeLeaderboardTab === 'faculty' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                Faculty
-              </button>
-              <button
-                onClick={() => setActiveLeaderboardTab('prodi')}
-                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${activeLeaderboardTab === 'prodi' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                Prodi
-              </button>
-            </div>
-
             <div className="bg-white rounded-lg shadow-sm border divide-y">
-              {activeLeaderboardTab === 'player' && (
-                leaderboard.length === 0 ? (
-                  <div className="p-4 text-center text-gray-400 text-sm">
-                    No scores yet. Be the first!
-                  </div>
-                ) : (
-                  leaderboard.map((entry) => {
-                    const facultyData = faculties.find(f => f.name === entry.faculty)
-                    return (
-                      <div key={entry.rank} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-700">
-                            {entry.rank}
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold text-gray-800 truncate">{entry.name}</span>
+              {leaderboard.length === 0 ? (
+                <div className="p-4 text-center text-gray-400 text-sm">
+                  No scores yet. Be the first!
+                </div>
+              ) : (
+                leaderboard.map((entry) => {
+                  const facultyData = faculties.find(f => f.name === entry.faculty)
+                  return (
+                    <div key={entry.rank} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-700">
+                          {entry.rank}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-semibold text-gray-800 truncate">{entry.name}</span>
+                          {entry.prodi ? (
                             <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border truncate max-w-[130px] ${facultyData?.color ?? 'bg-gray-50 border-gray-200 text-gray-600'}`}>
                               {entry.prodi}
                             </span>
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0 ml-2">
-                          <div className="text-sm font-semibold text-gray-800">{entry.totalScore} pts</div>
-                          <div className="text-xs text-gray-500">{entry.cardCount} card{entry.cardCount > 1 ? 's' : ''}</div>
+                          ) : null}
                         </div>
                       </div>
-                    )
-                  })
-                )
-              )}
-
-              {activeLeaderboardTab === 'faculty' && (
-                facultyLeaderboard.length === 0 ? (
-                  <div className="p-4 text-center text-gray-400 text-sm">
-                    No scores yet. Be the first!
-                  </div>
-                ) : (
-                  facultyLeaderboard.map((entry) => {
-                    const facultyData = faculties.find(f => f.name === entry.name)
-                    return (
-                      <div key={entry.rank} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-700">
-                            {entry.rank}
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold text-gray-800 truncate max-w-[140px]">{entry.name}</span>
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0 ml-2">
-                          <div className="text-sm font-semibold text-gray-800">{entry.totalScore} pts</div>
-                          <div className="text-xs text-gray-500">{entry.cardCount} card{entry.cardCount > 1 ? 's' : ''}</div>
-                        </div>
+                      <div className="text-right flex-shrink-0 ml-2">
+                        <div className="text-sm font-semibold text-gray-800">{entry.totalScore} pts</div>
+                        <div className="text-xs text-gray-500">{entry.cardCount} card{entry.cardCount > 1 ? 's' : ''}</div>
                       </div>
-                    )
-                  })
-                )
-              )}
-
-              {activeLeaderboardTab === 'prodi' && (
-                prodiLeaderboard.length === 0 ? (
-                  <div className="p-4 text-center text-gray-400 text-sm">
-                    No scores yet. Be the first!
-                  </div>
-                ) : (
-                  prodiLeaderboard.map((entry) => {
-                    const facultyData = faculties.find(f => f.name === entry.faculty)
-                    return (
-                      <div key={entry.rank} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-700">
-                            {entry.rank}
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold text-gray-800 truncate max-w-[130px]">{entry.name}</span>
-                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border truncate max-w-[130px] mt-0.5 ${facultyData?.color ?? 'bg-gray-50 border-gray-200 text-gray-600'}`}>
-                              {entry.faculty}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0 ml-2">
-                          <div className="text-sm font-semibold text-gray-800">{entry.totalScore} pts</div>
-                          <div className="text-xs text-gray-500">{entry.cardCount} card{entry.cardCount > 1 ? 's' : ''}</div>
-                        </div>
-                      </div>
-                    )
-                  })
-                )
+                    </div>
+                  )
+                })
               )}
             </div>
 
@@ -489,38 +343,6 @@ const Page = () => {
                 className="w-full px-3 py-2 border bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#4285F4]"
               />
 
-              <select
-                value={selectedFaculty || ''}
-                onChange={(e) => {
-                  const newFaculty = e.target.value;
-                  setSelectedFaculty(newFaculty || null);
-                  setSelectedProdi(null);
-                }}
-                className="px-3 py-1.5 text-sm w-full bg-white border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#36322F] focus:border-transparent"
-              >
-                <option value="">Select your faculty...</option>
-                {faculties.map(faculty => (
-                  <option key={faculty.name} value={faculty.name}>
-                    {faculty.name}
-                  </option>
-                ))}
-              </select>
-
-              {selectedFacultyData && (
-                <select
-                  value={selectedProdi || ''}
-                  onChange={(e) => setSelectedProdi(e.target.value || null)}
-                  className="px-3 py-1.5 text-sm w-full bg-white border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#4285F4] focus:border-transparent"
-                >
-                  <option value="">Select your program studi...</option>
-                  {selectedFacultyData.prodis.map(prodi => (
-                    <option key={prodi} value={prodi}>
-                      {prodi}
-                    </option>
-                  ))}
-                </select>
-              )}
-
               <button 
                 onClick={() => setShowRules(true)}
                 className="w-full bg-yellow-400 text-slate-900 border-2 border-slate-900 px-4 py-2 font-pixelify font-bold hover:bg-yellow-300 transition-colors shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[0px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2"
@@ -529,10 +351,10 @@ const Page = () => {
               </button>
 
               <button
-                disabled={selectedCardId === null || !username?.trim() || !selectedFaculty || !selectedProdi || isTransitioningToSandbox}
-                onClick={() => setIsTransitioningToSandbox(true)}
+                disabled={selectedCardId === null || !username?.trim() || isTransitioningToSandbox}
+                onClick={() => setIsLocked(true)}
                 className={`w-full cursor-pointer py-2 rounded-md font-semibold text-white transition-colors
-                  ${selectedCardId === null || !username?.trim() || !selectedFaculty || !selectedProdi || isTransitioningToSandbox
+                  ${selectedCardId === null || !username?.trim() || isTransitioningToSandbox
                     ? 'bg-gray-300 cursor-not-allowed'
                     : 'bg-[#4285F4] hover:bg-blue-600 shadow-md'}
                   `}
@@ -546,9 +368,10 @@ const Page = () => {
       
       {/* Audio Element and Floating Button */}
       <audio ref={audioRef} src="/bgm.mp3" loop />
+      
       <button
         onClick={toggleMusic}
-        className="fixed bottom-6 right-6 p-3 bg-white rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors z-50 group flex items-center justify-center"
+        className="fixed bottom-6 right-6 p-3 bg-white rounded-full shadow-[4px_4px_0px_rgba(0,0,0,1)] border-2 border-slate-900 hover:bg-gray-50 transition-colors z-50 group flex items-center justify-center active:translate-y-1 active:shadow-[0px_0px_0px_rgba(0,0,0,1)]"
         aria-label="Toggle Background Music"
       >
         {isMusicPlaying ? (
@@ -558,6 +381,14 @@ const Page = () => {
         )}
       </button>
     </div>
+  )
+}
+
+const Page = () => {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen bg-blue-50 flex items-center justify-center font-pixelify text-2xl">Loading...</div>}>
+      <PageContent />
+    </React.Suspense>
   )
 }
 

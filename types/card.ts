@@ -1,7 +1,7 @@
 export interface BestScore {
   name: string;
-  faculty: string;
-  prodi: string;
+  faculty?: string;
+  prodi?: string;
   score: number;
 }
 
