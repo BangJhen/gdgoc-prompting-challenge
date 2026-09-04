@@ -560,7 +560,11 @@ ${conversationContext}
    - ❌ DO NOT add decorative frames, borders, or backgrounds to the page.
    - ❌ DO NOT add wrapper divs with padding or margins that push the object away from the edges.
    - ✅ ONLY generate the raw shape/object itself filling the screen as requested.
-2. **USE MAIN APP FILE** - Prefer modifying the main App file, but if you create new components:
+2. **SIZE AND SCALING - DO NOT MAKE IT TOO BIG**:
+   - The generated image/pixel art must be moderately sized (e.g., maximum 150px - 250px width).
+   - If using SVG, set a reasonable maximum width/height using Tailwind classes (like 'max-w-[200px] max-h-[200px]').
+   - Do NOT make the image fill the entire screen horizontally or vertically. Keep it relatively small like a standard card graphic.
+3. **USE MAIN APP FILE** - Prefer modifying the main App file, but if you create new components:
    - ALWAYS import and use them in the main App file
    - NEVER create components that aren't used in the main app
 4. **USE STANDARD TAILWIND CLASSES ONLY**:

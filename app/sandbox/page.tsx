@@ -145,6 +145,14 @@ function SandboxPageContent() {
     const [username, setUsername] = useQueryState('username')
 
     const [previousCard, setPreviousCard] = useState<Card | null>(null);
+    const [currentCard, setCurrentCard] = useState<Card | null>(null);
+
+    useEffect(() => {
+        if (selectedCardId) {
+            setCurrentCard(CardStorage.getCardById(parseInt(selectedCardId)));
+        }
+    }, [selectedCardId]);
+
     const [judgingStatus, setJudgingStatus] = useState<'submitting' | 'grading' | 'completed-bridging' | 'completed-first-own' | 'completed-higher-score' | 'completed-lower-score' | 'failed' | null>(null);
 
     // Version history: stores a screenshot+prompt for each completed generation
@@ -468,13 +476,15 @@ Tip: I automatically detect and install npm packages from your code imports (lik
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
             let finalData: any = null;
+            let buffer = '';
 
             while (reader) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
 
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
@@ -759,7 +769,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
             setGeneratedImage(chosenScreenshot);
 
             // Get the original image
-            const originalImageResponse = await fetch(`/images/image-${selectedCardId}.png`);
+            const originalImageResponse = await fetch(previousCardLocal?.image || `/images/image-${selectedCardId}.png`);
             if (!originalImageResponse.ok) throw new Error('Failed to load original image');
             const originalImageBlob = await originalImageResponse.blob();
 
@@ -970,14 +980,16 @@ Tip: I automatically detect and install npm packages from your code imports (lik
             const decoder = new TextDecoder();
             let generatedCode = '';
             let explanation = '';
+            let buffer = '';
 
             if (reader) {
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
 
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
 
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
@@ -1319,7 +1331,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                     <div className="flex-1 flex flex-col overflow-hidden">
                         {/* Image placeholder in top right */}
                         <div className="absolute top-4 right-4 z-10 w-56 h-32 bg-gray-200 border border-gray-300 rounded-lg" >
-                            <Image src={`/images/image-${selectedCardId}.png`} alt="Selected Image" fill className='object-contain' />
+                            {currentCard && <Image src={currentCard.image} alt={currentCard.name} fill className='object-contain' />}
                             </div>
 
                         {/* Thinking Mode Display - Only show during active generation */}
@@ -1602,7 +1614,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                     <div className="relative w-full h-full bg-gray-50 flex items-center justify-center">
                         {/* Image placeholder in top right */}
                         <div className="absolute top-4 right-4 z-10 w-56 h-32 bg-gray-200 border border-gray-300 rounded-lg" >
-                            <Image src={`/images/image-${selectedCardId}.png`} alt="Selected Image" fill className='object-contain' />
+                            {currentCard && <Image src={currentCard.image} alt={currentCard.name} fill className='object-contain' />}
                         </div>
 
                         <div className="text-center">
@@ -1632,7 +1644,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                     <div className="relative w-full h-full">
                         {/* Image placeholder in top right */}
                         <div className="absolute top-4 right-4 z-10 w-56 h-32 bg-gray-200 border border-gray-300 rounded-lg" >
-                            <Image src={`/images/image-${selectedCardId}.png`} alt="Selected Image" fill className='object-contain' />
+                            {currentCard && <Image src={currentCard.image} alt={currentCard.name} fill className='object-contain' />}
                         </div>
 
                         <iframe
@@ -1839,12 +1851,12 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                                     <div className="text-center">
                                         <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
                                             <div className="relative w-full h-48 mb-4">
-                                                <Image 
-                                                    src={`/images/image-${selectedCardId}.png`} 
-                                                    alt="Original Image" 
+                                                {currentCard && <Image 
+                                                    src={currentCard.image} 
+                                                    alt={currentCard.name} 
                                                     fill 
                                                     className='object-contain rounded-lg' 
-                                                />
+                                                />}
                                             </div>
                                             <h3 className="text-lg font-semibold text-gray-800 mb-1">Original Design</h3>
                                             <p className="text-sm text-gray-500">Target to recreate</p>
